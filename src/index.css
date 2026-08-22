@@ -1,0 +1,44 @@
+@import 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@300;400;700&display=swap';
+@import 'tailwindcss';
+
+@font-face {
+  font-family: "Space Grotesk:Bold";
+  font-style: normal;
+  font-weight: 700;
+  src: url('https://static.figma.com/font/SpaceGrotesk_wght__1') format('woff2');
+}
+
+@font-face {
+  font-family: "Inter:Bold";
+  font-style: normal;
+  font-weight: 700;
+  src: url('https://static.figma.com/font/Inter_1') format('woff2');
+}
+
+@font-face {
+  font-family: "Inter:Light";
+  font-style: normal;
+  font-weight: 300;
+  src: url('https://static.figma.com/font/Inter_1') format('woff2');
+}
+
+@font-face {
+  font-family: "Inter:Regular";
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://static.figma.com/font/Inter_1') format('woff2');
+}
+
+@font-face {
+  font-family: "Liberation Mono:Regular";
+  font-style: normal;
+  font-weight: 400;
+  src: local('Liberation Mono'), local('LiberationMono'), local('Courier New');
+}
+
+@font-face {
+  font-family: "Liberation Mono:Bold";
+  font-style: normal;
+  font-weight: 700;
+  src: local('Liberation Mono Bold'), local('LiberationMono-Bold'), local('Courier New Bold');
+}
