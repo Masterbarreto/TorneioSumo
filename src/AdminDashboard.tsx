@@ -5,8 +5,9 @@ import ArenasPage from "./ArenasPage";
 import CertificatesPage from "./CertificatesPage";
 import TeamsPage from "./TeamsPage";
 import PartidasPage from "./PartidasPage";
+import AvaliacaoTorneio from "./AvaliacaoTorneio";
 
-type AdminPage = "home" | "arenas" | "certificados" | "times" | "partidas";
+type AdminPage = "home" | "arenas" | "certificados" | "times" | "partidas" | "rules";
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [page, setPage] = useState<AdminPage>("home");
@@ -38,6 +39,10 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         onStartChampionship={() => setChampionshipStarted(true)}
       />
     );
+  }
+
+  if (page === "rules") {
+    return <AvaliacaoTorneio />;
   }
 
   return (

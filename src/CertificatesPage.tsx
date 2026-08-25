@@ -232,7 +232,7 @@ function BadgeCard({ member, team, showPhoto, showQR, showSeal }: {
           {/* Senac brand */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "flex-end", flexShrink: 0, gap: 2 }}>
             <div style={{ background: "#e30000", borderRadius: 4, padding: "2px 6px" }}>
-              <span style={{ color: "white", fontWeight: 900, fontSize: 11, fontFamily: "sans-serif", fontStyle: "italic", letterSpacing: "-0.5px" }}>Senac</span>
+              <span style={{ color: "white", fontWeight: 900, fontSize: 11, fontFamily: "sans-serif", letterSpacing: "-0.5px", textTransform: "uppercase" }}>SENAC</span>
             </div>
             <span style={{ fontSize: 7, color: "#94a3b8", letterSpacing: "0.5px", fontFamily: "sans-serif" }}>REALIZAÇÃO</span>
           </div>

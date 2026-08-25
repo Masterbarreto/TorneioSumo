@@ -14,8 +14,6 @@ const IMG_CARD3 =
   "https://images.unsplash.com/photo-1678225867994-e7a5b071ebfd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800";
 const IMG_SEGUIDOR =
   "https://images.unsplash.com/photo-1518314916381-77a37c2a49ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600";
-const IMG_SUMO =
-  "https://images.unsplash.com/photo-1527612820672-5b56351f7346?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600";
 const IMG_DANARINO =
   "https://images.unsplash.com/photo-1737228813532-9cd720824ba7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600";
 
@@ -93,7 +91,7 @@ function useReveal(threshold = 0.15) {
 }
 
 /* ─── Countdown ───────────────────────────────────────────────────────── */
-const TARGET_DATE = new Date("2026-12-15T09:00:00");
+const TARGET_DATE = new Date("2026-11-26T09:00:00");/*confirmar data*/
 function useCountdown(target: Date) {
   const calc = () => {
     const diff = Math.max(0, target.getTime() - Date.now());
@@ -161,7 +159,7 @@ function CountdownWidget() {
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
             <p className="font-['Liberation_Mono:Regular',monospace] text-[10px] text-[rgba(5,29,48,0.6)] tracking-[1px] uppercase leading-[15px]">CONTAGEM REGRESSIVA</p>
-            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio de robotica 2026</p>
+            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio de sumo 2026</p>
           </div>
           <svg width="18" height="21" viewBox="0 0 18 21" fill="none">
             <path d={svgPaths.pe40b59c} fill="#8C4F00" />
@@ -228,8 +226,8 @@ function HeroSection() {
 
         {/* Heading */}
         <div className="flex flex-col" style={{ animation: "fadeInUp 0.6s 0.1s ease both" }}>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 60px rgba(0,53,106,0.5)" }}>NOVA</span>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}>ROBOTICS.</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 60px rgba(0,53,106,0.5)" }}>Torneio de </span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}>Sumo</span>
         </div>
 
         {/* Description */}
@@ -237,8 +235,7 @@ function HeroSection() {
           className="font-['Inter:Light',Inter,sans-serif] font-light text-[rgba(255,255,255,0.8)] text-[18px] leading-relaxed max-w-2xl"
           style={{ animation: "fadeInUp 0.6s 0.2s ease both" }}
         >
-          A maior plataforma de inovação e robótica educacional do país.
-          Desenvolvendo os arquitetos da precisão através de desafios de engenharia autônoma.
+          Participe do torneio de sumo e teste suas habilidades em robótica, programação e estratégia. Forme sua equipe, construa seu robô e prepare-se para a competição!
         </p>
 
         {/* CTAs */}
@@ -253,8 +250,8 @@ function HeroSection() {
             </span>
           </RippleBtn>
           <div className="flex flex-col cursor-default">
-            <span className="font-['Liberation_Mono:Regular',monospace] text-[rgba(255,255,255,0.5)] text-[10px] tracking-[1px] uppercase">PRÓXIMO MARCO</span>
-            <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-white text-[18px] mt-1">Final Nacional: 15.12.2026</span>
+            <span className="font-['Liberation_Mono:Regular',monospace] text-[rgba(255,255,255,0.5)] text-[10px] tracking-[1px] uppercase">Em novembro</span>
+            <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-white text-[18px] mt-1">Final: 26.11.2026</span> 
           </div>
         </div>
       </div>
@@ -343,68 +340,6 @@ function NewsSection() {
               onClick={() => { setDir(i > active ? "right" : "left"); setActive(i); }}
               className={`rounded-full transition-all duration-300 ${i === active ? "w-6 h-2 bg-[#00356a]" : "w-2 h-2 bg-[#c2c6d2] hover:bg-[#8c9ab0]"}`}
             />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── ModalidadesSection ──────────────────────────────────────────────── */
-function ModalidadesSection() {
-  const { ref, visible } = useReveal(0.1);
-  const [activeCard, setActiveCard] = useState<number | null>(null);
-  const [modal, setModal] = useState<null | { title: string; body: string }>(null);
-
-  const modalidades = [
-    { img: IMG_SEGUIDOR, title: "SEGUIDOR DE LINHA", desc: "Velocidade e precisão extrema em trajetos complexos com obstáculos dinâmicos.", rules: "Os robôs devem seguir uma linha preta sobre superfície branca, com largura de 15-25mm. São avaliados tempo de percurso, penalidades por desvio e estabilidade. Circuito com curvas fechadas, cruzamentos e interrupções." },
-    { img: IMG_SUMO, title: "SUMÔ DE ROBÔS", desc: "Estratégia e força bruta em batalhas épicas para dominar o centro do dojô.", rules: "Robôs disputam partidas de 3 minutos num dojô circular de 77cm. Vence quem empurrar o adversário para fora. Máximo de 500g e 10x10cm. Sensores e estratégia são fundamentais." },
-    { img: IMG_DANARINO, title: "DANÇARINO", desc: "Sincronia, criatividade e performance artística integrando robótica e som.", rules: "Apresentação coreografada de até 3 minutos ao som de uma música escolhida pela equipe. Avaliados em criatividade, sincronismo, movimentos e interação com a trilha sonora." },
-  ];
-
-  return (
-    <section id="modalidades" className="bg-[#edf4ff] w-full py-24 px-8 lg:px-16" ref={ref}>
-      {modal && <Modal title={modal.title} body={modal.body} onClose={() => setModal(null)} />}
-      <div
-        className="max-w-[1280px] mx-auto flex flex-col gap-16 transition-all duration-700"
-        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(40px)" }}
-      >
-        <div className="flex flex-col gap-4 items-center text-center">
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#8c4f00] text-[12px] tracking-[4.8px] uppercase">CATEGORIAS DE COMPETIÇÃO</span>
-          <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[clamp(28px,4vw,48px)] uppercase tracking-[-2px] leading-none">MODALIDADES</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {modalidades.map(({ img, title, desc, rules }, i) => (
-            <div
-              key={title}
-              className={`bg-white rounded-[2px] shadow-[0px_1px_1px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden border-b-4 transition-all duration-300 cursor-pointer ${activeCard === i ? "border-[#00f2ff] shadow-[0_8px_32px_rgba(0,53,106,0.18)] -translate-y-2" : "border-transparent hover:border-[#00356a] hover:-translate-y-1 hover:shadow-[0_4px_20px_rgba(0,53,106,0.1)]"}`}
-              style={{ transitionDelay: `${i * 60}ms` }}
-              onMouseEnter={() => setActiveCard(i)}
-              onMouseLeave={() => setActiveCard(null)}
-              onClick={() => setModal({ title, body: rules })}
-            >
-              <div className="relative bg-[#cfe5ff] h-[168px] overflow-hidden">
-                <img src={img} alt={title} className={`w-full h-full object-cover grayscale mix-blend-multiply transition-all duration-500 ${activeCard === i ? "scale-105 grayscale-0 mix-blend-normal opacity-80" : ""}`} />
-                {activeCard === i && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,53,106,0.4)] to-transparent" />
-                )}
-              </div>
-              <div className="flex flex-col gap-3 px-8 pt-5 pb-9">
-                <h3 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] uppercase pt-3 leading-[28px]">{title}</h3>
-                <p className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(5,29,48,0.7)] text-[14px] leading-[20px]">{desc}</p>
-                <RippleBtn
-                  rippleColor="rgba(0,53,106,0.1)"
-                  className="flex items-center gap-2 pt-3 group w-fit"
-                  onClick={(e) => { e.stopPropagation(); setModal({ title, body: rules }); toast("Abrindo regras de " + title, "📋"); }}
-                >
-                  <span className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[#00356a] text-[12px] tracking-[1.2px] uppercase group-hover:underline">VER REGRAS</span>
-                  <svg className="transition-transform group-hover:translate-x-1" width="13" height="10" viewBox="0 0 12.8333 9.33333" fill="none">
-                    <path d={svgPaths.pa281498} fill="#00356A" />
-                  </svg>
-                </RippleBtn>
-              </div>
-            </div>
           ))}
         </div>
       </div>
@@ -573,14 +508,10 @@ function NavBar({ onLoginClick }: { onLoginClick: () => void }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const links = ["TORNEIOS", "MODALIDADES", "KNOWLEDGE HUB", "SOBRE"];
+  const links = ["TORNEIOS", "KNOWLEDGE HUB", "SOBRE"];
   const handleLink = (l: string) => {
     setActiveLink(l);
-    if (l === "MODALIDADES") {
-      document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      toast(`Navegando para ${l}`, "🔗");
-    }
+    toast(`Navegando para ${l}`, "🔗");
     setOpen(false);
     setTimeout(() => setActiveLink(null), 600);
   };
@@ -702,7 +633,6 @@ export default function App() {
       <div className="pt-[72px]">
         <HeroSection />
         <NewsSection />
-        <ModalidadesSection />
         <CtaSection onLoginClick={openLogin} />
         <Footer onLoginClick={openLogin} />
       </div>

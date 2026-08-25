@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import SenacLogo from "./images/Senac_logo.svg.webp";
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 type Role = "ADMIN" | "JUIZ" | "TÉCNICO";
@@ -83,9 +84,9 @@ function IconPlus() {
 /* ─── Left panel ─────────────────────────────────────────────────────── */
 function LeftPanel() {
   return (
-    <div className="hidden md:flex relative flex-col justify-between p-10 w-[420px] shrink-0 overflow-hidden bg-[#051d30]">
+    <div className="hidden md:flex relative flex-col justify-between p-10 w-[420px] shrink-0 overflow-visible bg-[#051d30]">
       {/* BG image */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 overflow-hidden">
         <img src={IMG_ROBOT} alt="" className="w-full h-full object-cover opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-b from-[rgba(0,30,60,0.6)] via-[rgba(0,53,106,0.5)] to-[rgba(5,29,48,0.95)]" />
       </div>
@@ -116,14 +117,12 @@ function LeftPanel() {
       </div>
 
       {/* Footer logo */}
-      <div className="relative z-10">
-        <div className="flex items-center gap-2">
-          <svg width="48" height="36" viewBox="0 0 48 36" fill="none">
-            <path d="M24 4C18 4 12 8 8 14L12 18C15 13 19 10 24 10C29 10 33 13 36 18L40 14C36 8 30 4 24 4Z" fill="white" opacity="0.9"/>
-            <path d="M8 22C11 27 17 31 24 31C31 31 37 27 40 22L36 18C33 22 29 25 24 25C19 25 15 22 12 18L8 22Z" fill="white" opacity="0.6"/>
-          </svg>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-white text-[18px]">senac</span>
-        </div>
+      <div className="relative z-10 w-[390px] h-[210px] flex items-center justify-start">
+        <img
+          src={SenacLogo}
+          alt="SENAC"
+          className="w-full h-full object-contain object-left"
+        />
       </div>
     </div>
   );
