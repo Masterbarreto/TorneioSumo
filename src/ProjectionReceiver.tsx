@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "./config/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ export default function ProjectionReceiver() {
   // 1. Fetch Real Matches from MongoDB Atlas API
   const fetchMatchesFromApi = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas");
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas`);
       if (res.ok) {
         const rawList = await res.json();
         if (Array.isArray(rawList) && rawList.length > 0) {

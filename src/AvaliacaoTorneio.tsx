@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { BracketMatch, SumoTournamentState } from "./ProjectionReceiver";
+import { API_BASE_URL } from "./config/api";
 
 // ─── Interfaces & Types ───────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export default function AvaliacaoTorneio({
   const fetchMatchesFromApi = async () => {
     setLoadingTeams(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas");
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas`);
       if (res.ok) {
         const rawList = await res.json();
         if (Array.isArray(rawList) && rawList.length > 0) {
@@ -269,7 +270,7 @@ export default function AvaliacaoTorneio({
   // 🔀 SORTEIO AUTOMÁTICO: Resets and shuffles in MongoDB Atlas!
   const handleSorteioAutomatico = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas/reset-sorteio", { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas/reset-sorteio`, { method: "POST" });
       if (res.ok) {
         await fetchMatchesFromApi();
         broadcastSync();
@@ -365,7 +366,7 @@ export default function AvaliacaoTorneio({
       const winnerName = winningTeam === "teamB" ? selectedMatch.teamB.name : selectedMatch.teamA.name;
 
       // Real API POST to MongoDB com tempos de cada round!
-      const res = await fetch(`http://localhost:3000/api/v1/Rouds/partidas/${selectedMatch.code || selectedMatch.id}/rounds`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/Rouds/partidas/${selectedMatch.code || selectedMatch.id}/rounds`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

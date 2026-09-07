@@ -5,6 +5,7 @@ import AdminDashboard from "./AdminDashboard";
 import DashboardDoTecnico from "./imports/DashboardDoTecnico-1/index";
 import AlunoPortal from "./AlunoPortal";
 import { getUserSession, clearUserSession } from "./utils/cookies";
+import { API_BASE_URL } from "./config/api";
 
 /* ─── Images ─────────────────────────────────────────────────────────── */
 const IMG_HERO =
@@ -758,7 +759,7 @@ export default function App() {
     const session = getUserSession();
     if (session?.userId) {
       try {
-        await fetch(`http://localhost:3000/api/v1/users/logout/${session.userId}`, {
+        await fetch(`${API_BASE_URL}/api/v1/users/logout/${session.userId}`, {
           method: "DELETE",
           credentials: "include",
         });

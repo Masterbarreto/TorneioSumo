@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import svgPaths from "./svg-n9wrsd9n43";
 import imgTechnicalRobotBlueprint from "./28c0bcbd6906c412997a24a68b3eab00db7c9e46.png";
 import { getUserSession } from "../../utils/cookies";
+import { API_BASE_URL } from "../../config/api";
 
 function Container2() {
   return (
@@ -1229,7 +1230,7 @@ export default function DashboardDoTecnico({
   });
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/v1/adm/dashboard-stats", { credentials: "include" })
+    fetch(`${API_BASE_URL}/api/v1/adm/dashboard-stats`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data && typeof data.totalEquipes === "number") {

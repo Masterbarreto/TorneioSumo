@@ -1,6 +1,7 @@
 // filepath: src/EntrarEquipeModal.tsx
 import { useState } from "react";
 import { UserSession } from "./utils/cookies";
+import { API_BASE_URL } from "./config/api";
 
 interface EntrarEquipeModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export default function EntrarEquipeModal({
 
     setSubmitting(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/Equipes/join", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/Equipes/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

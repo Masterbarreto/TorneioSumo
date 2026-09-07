@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import SenacLogo from "./images/Senac_logo.svg.webp";
 import { saveUserSession } from "./utils/cookies";
+import { API_BASE_URL } from "./config/api";
 
 export const isValidEmail = (val: string) => {
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val.trim());
@@ -266,7 +267,7 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/users/login", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -449,7 +450,7 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/users/register", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -561,7 +562,7 @@ function VerifyScreen({ email, password, onBack, onDone }: { email: string; pass
     setAttempted(true);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/users/verify", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code: otp.join("") })
@@ -575,7 +576,7 @@ function VerifyScreen({ email, password, onBack, onDone }: { email: string; pass
       }
 
       // Login automatically upon verification success
-      const loginRes = await fetch("http://localhost:3000/api/v1/users/login", {
+      const loginRes = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -715,7 +716,7 @@ function RegisterTeamScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      const teamRes = await fetch("http://localhost:3000/api/v1/Equipes", {
+      const teamRes = await fetch(`${API_BASE_URL}/api/v1/Equipes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome: teamName }),
@@ -731,7 +732,7 @@ function RegisterTeamScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
       const teamId = teamData._id;
 
       for (const m of members) {
-        await fetch(`http://localhost:3000/api/v1/Equipes/${teamId}/membros`, {
+        await fetch(`${API_BASE_URL}/api/v1/Equipes/${teamId}/membros`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

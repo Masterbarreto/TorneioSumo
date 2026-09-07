@@ -3,6 +3,7 @@ import imgCyberBotsLogo from "@/imports/DashboardDoTecnico-2/c59b0854417cc2b0f31
 import imgTechKnightsLogo from "@/imports/DashboardDoTecnico-2/e18b7015cb02a1e04d542279e6514f25357d4adf.png";
 import imgMechEngLogo from "@/imports/DashboardDoTecnico-2/5d16b98e05035db093ea19ea95851a20eb1accdb.png";
 import AdminSidebar from "./AdminSidebar";
+import { API_BASE_URL } from "./config/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1144,7 +1145,7 @@ export default function TeamsPage({
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" })
+    fetch(`${API_BASE_URL}/api/v1/Equipes`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         const mappedTeams = data.map((t: any) => ({
@@ -1182,7 +1183,7 @@ export default function TeamsPage({
     if (!teamToDelete) return;
     setDeletingTeam(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/Equipes/${teamToDelete.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/Equipes/${teamToDelete.id}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -1210,7 +1211,7 @@ export default function TeamsPage({
     const { member, team: fromTeam } = transferTarget;
     setTransferringMember(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/Equipes/transfer-member", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/Equipes/transfer-member`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -1265,7 +1266,7 @@ export default function TeamsPage({
 
   async function updateTeam(updated: Team) {
     try {
-      await fetch(`http://localhost:3000/api/v1/Equipes/${updated.id}/status`, {
+      await fetch(`${API_BASE_URL}/api/v1/Equipes/${updated.id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: updated.status }),
@@ -1273,7 +1274,7 @@ export default function TeamsPage({
       });
       
       for (const m of updated.members) {
-        await fetch(`http://localhost:3000/api/v1/Equipes/${updated.id}/membros/${m.cpf}/doc-status`, {
+        await fetch(`${API_BASE_URL}/api/v1/Equipes/${updated.id}/membros/${m.cpf}/doc-status`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ docStatus: m.docStatus }),
@@ -1289,7 +1290,7 @@ export default function TeamsPage({
 
   async function updateMember(teamId: string, updated: Member) {
     try {
-      await fetch(`http://localhost:3000/api/v1/Equipes/${teamId}/membros/${updated.cpf}/doc-status`, {
+      await fetch(`${API_BASE_URL}/api/v1/Equipes/${teamId}/membros/${updated.cpf}/doc-status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ docStatus: updated.docStatus, judgeNote: updated.judgeNote }),

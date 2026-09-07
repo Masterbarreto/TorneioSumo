@@ -3,6 +3,7 @@ import AdminSidebar from "./AdminSidebar";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import certTemplateImg from "./images/certificado_modelo.jpg";
+import { API_BASE_URL } from "./config/api";
 
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -481,7 +482,7 @@ export default function CertificatesPage({
 
   useEffect(() => {
     // 1. Fetch real teams from MongoDB
-    fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" })
+    fetch(`${API_BASE_URL}/api/v1/Equipes`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -493,42 +494,49 @@ export default function CertificatesPage({
                     id: m.id || m.cpf || `m_${tIdx}_${mIdx}`,
                     name: m.name || `Integrante ${mIdx + 1}`,
                     role: m.role || "Competidor",
-                    photo:
-                      m.photo ||
-                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
+                    photo: m.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
                     checked: true,
                   }))
-                : [
-                    {
-                      id: `m_${tIdx}_cap`,
-                      name: `Capitão - ${teamName}`,
-                      role: "Líder Técnico",
-                      photo:
-                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
-                      checked: true,
-                    },
-                  ];
+                : (Array.isArray(t.membros) && t.membros.length > 0
+                    ? t.membros.map((m: any, mIdx: number) => ({
+                        id: m.id || m.cpf || `m_${tIdx}_${mIdx}`,
+                        name: m.name || m.nome || `Integrante ${mIdx + 1}`,
+                        role: m.role || m.funcao || "Competidor",
+                        photo: m.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
+                        checked: true,
+                      }))
+                    : [
+                        {
+                          id: `lead_${tIdx}`,
+                          name: t.lider || t.captain || "Capitão",
+                          role: "Líder da Equipe",
+                          photo: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
+                          checked: true,
+                        },
+                      ]);
 
             return {
-              id: t.id || t._id,
+              id: t.id || t._id || `t_${tIdx}`,
               name: teamName,
-              code: String((t.teamId || t._id || String(tIdx + 1)).slice(-3)),
-              placement: (tIdx % 3) + 1,
+              code: t.code || t.codigo || String(tIdx + 1).padStart(3, "0"),
+              placement: t.placement || t.posicao || tIdx + 1,
               members: mList,
             };
           });
 
           setTeams(mappedTeams);
-          setSelectedTeamId(mappedTeams[0].id);
-          if (mappedTeams[0].members.length > 0) {
-            setPreviewMemberId(mappedTeams[0].members[0].id);
+          if (mappedTeams.length > 0) {
+            setSelectedTeamId(mappedTeams[0].id);
+            if (mappedTeams[0].members.length > 0) {
+              setPreviewMemberId(mappedTeams[0].members[0].id);
+            }
           }
         }
       })
       .catch((err) => console.error("Erro ao carregar equipes em certificados:", err));
 
     // 2. Fetch history from MongoDB
-    fetch("http://localhost:3000/api/v1/certificados", { credentials: "include" })
+    fetch(`${API_BASE_URL}/api/v1/certificados`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -630,7 +638,7 @@ export default function CertificatesPage({
       pdf.save(fileName);
 
       // Save to backend database
-      const res = await fetch("http://localhost:3000/api/v1/certificados", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/certificados`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

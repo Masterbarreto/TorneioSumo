@@ -3,6 +3,7 @@ import { getUserSession, clearUserSession, saveUserSession, UserSession } from "
 import AlunoOnboarding from "./AlunoOnboarding";
 import CadastroEquipeWizard from "./CadastroEquipeWizard";
 import EntrarEquipeModal from "./EntrarEquipeModal";
+import { API_BASE_URL } from "./config/api";
 
 interface TeamMember {
   id: string;
@@ -116,7 +117,7 @@ export default function AlunoPortal({
         const userName = (sessionNow?.name || "").trim().toLowerCase();
 
         // 1. Carregar Equipes do torneio para identificar vínculo
-        const teamsRes = await fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" });
+        const teamsRes = await fetch(`${API_BASE_URL}/api/v1/Equipes`, { credentials: "include" });
         if (teamsRes.ok) {
           const allTeams = await teamsRes.json();
           if (Array.isArray(allTeams)) {
@@ -178,7 +179,7 @@ export default function AlunoPortal({
         }
 
         // 2. Carregar confrontos reais da API do MongoDB
-        const matchesRes = await fetch("http://localhost:3000/api/v1/partidas", { credentials: "include" });
+        const matchesRes = await fetch(`${API_BASE_URL}/api/v1/partidas`, { credentials: "include" });
         if (matchesRes.ok) {
           const list = await matchesRes.json();
           if (Array.isArray(list)) {

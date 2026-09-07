@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { BracketMatch, SumoTournamentState } from "./ProjectionReceiver";
+import { API_BASE_URL } from "./config/api";
 
 export default function PartidasPage({
   onNavigate,
@@ -39,7 +40,7 @@ export default function PartidasPage({
   // 1. Fetch Real Matches from MongoDB Atlas API
   const fetchMatchesFromApi = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas");
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas`);
       if (res.ok) {
         const rawList = await res.json();
         if (Array.isArray(rawList) && rawList.length > 0) {
@@ -183,7 +184,7 @@ export default function PartidasPage({
     if (!m) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/partidas/${matchId}/release`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas/${matchId}/release`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ released: !m.released }),
@@ -206,7 +207,7 @@ export default function PartidasPage({
   // Liberar todos os resultados no MongoDB Atlas
   const releaseAllResults = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas/release-all", { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas/release-all`, { method: "POST" });
       if (res.ok) {
         await fetchMatchesFromApi();
         broadcastSync();
@@ -220,7 +221,7 @@ export default function PartidasPage({
   // Ocultar todos os resultados no MongoDB Atlas
   const hideAllResults = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/partidas/hide-all", { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas/hide-all`, { method: "POST" });
       if (res.ok) {
         await fetchMatchesFromApi();
         broadcastSync();
@@ -234,7 +235,7 @@ export default function PartidasPage({
   // Definir vencedor de um confronto no MongoDB Atlas (com cascata de avanço!)
   const setWinner = async (matchId: string, winningTeam: 1 | 2) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/partidas/${matchId}/winner`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/partidas/${matchId}/winner`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ winningTeam }),

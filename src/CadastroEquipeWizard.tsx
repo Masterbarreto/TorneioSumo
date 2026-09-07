@@ -1,6 +1,7 @@
 // filepath: src/CadastroEquipeWizard.tsx
 import { useState, useRef, ChangeEvent } from "react";
 import { UserSession } from "./utils/cookies";
+import { API_BASE_URL } from "./config/api";
 
 export interface WizardMember {
   id: string;
@@ -232,7 +233,7 @@ export default function CadastroEquipeWizard({
     setSubmissionDate(formattedDate);
 
     try {
-      const res = await fetch("http://localhost:3000/api/v1/Equipes", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/Equipes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

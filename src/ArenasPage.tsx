@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type ChangeEvent } from "react";
 import AdminSidebar from "./AdminSidebar";
+import { API_BASE_URL } from "./config/api";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type ArenaStatus = "Ativa" | "Inativa" | "Manutenção";
@@ -500,7 +501,7 @@ function TeamsView({ arena, onBack, onSave }: { arena: Arena; onBack: () => void
   const [registeredTeams, setRegisteredTeams] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/v1/equipes")
+    fetch(`${API_BASE_URL}/api/v1/equipes`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -658,7 +659,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
   const fetchArenas = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/v1/arenas", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/arenas`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -688,7 +689,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
 
   const handleCreate = async (f: ArenaFormData) => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/arenas", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/arenas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -711,7 +712,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
   const handleEdit = async (f: ArenaFormData) => {
     if (!selected) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/arenas/${selected.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/arenas/${selected.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -733,7 +734,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/arenas/${deleteTarget.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/arenas/${deleteTarget.id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -751,7 +752,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
 
   const handleSaveTeams = (arenaId: string) => async (teams: Team[]) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/arenas/${arenaId}/teams`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/arenas/${arenaId}/teams`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
