@@ -1,15 +1,6 @@
 // filepath: src/EntrarEquipeModal.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { UserSession } from "./utils/cookies";
-
-interface TeamItem {
-  id: string;
-  name: string;
-  teamId?: string;
-  code?: string;
-  status: string;
-  members?: any[];
-}
 
 interface EntrarEquipeModalProps {
   isOpen: boolean;
@@ -24,44 +15,19 @@ export default function EntrarEquipeModal({
   user,
   onSuccess,
 }: EntrarEquipeModalProps) {
-  const [mode, setMode] = useState<"code" | "list">("code");
-  const [teamCode, setTeamCode] = useState("");
-  const [selectedTeamId, setSelectedTeamId] = useState("");
-  const [role, setRole] = useState("Programador(a)");
-  const [teams, setTeams] = useState<TeamItem[]>([]);
-  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [captainCode, setCaptainCode] = useState("");
+  const [role, setRole] = useState("Programador(a) de Sensores");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (isOpen) {
-      setError("");
-      setLoadingTeams(true);
-      fetch("http://localhost:3000/api/v1/Equipes")
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setTeams(data);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoadingTeams(false));
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleJoin = async () => {
     setError("");
-    const targetCode = mode === "code" ? teamCode.trim() : "";
-    const targetId = mode === "list" ? selectedTeamId : "";
+    const cleanCode = captainCode.trim().toUpperCase();
 
-    if (mode === "code" && !targetCode) {
-      setError("Por favor, insira o código de convite da equipe.");
-      return;
-    }
-    if (mode === "list" && !targetId) {
-      setError("Selecione uma equipe da lista para ingressar.");
+    if (!cleanCode) {
+      setError("Por favor, digite o Código Único fornecido pelo capitão da sua equipe.");
       return;
     }
 
@@ -72,12 +38,11 @@ export default function EntrarEquipeModal({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          teamCode: targetCode || undefined,
-          teamId: targetId || undefined,
+          captainCode: cleanCode,
           role,
           memberData: {
-            name: user?.name || "Aluno Competidor",
-            email: user?.email || "",
+            name: user?.name || "Marcus Silva",
+            email: user?.email || "marcus.silva@senac.edu.br",
           },
         }),
       });
@@ -86,32 +51,32 @@ export default function EntrarEquipeModal({
       setSubmitting(false);
 
       if (!res.ok) {
-        setError(data.error || "Não foi possível ingressar na equipe.");
+        setError(data.error || "Não foi possível ingressar na equipe com este código.");
         return;
       }
 
       onSuccess(data.team);
     } catch (err) {
       setSubmitting(false);
-      setError("Erro ao conectar ao servidor. Tente novamente.");
+      setError("Erro de conexão ao validar o código do capitão. Tente novamente.");
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-[#00356a] px-6 py-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">
-              🤝
+              🔑
             </div>
             <div>
               <h3 className="font-['Space_Grotesk'] font-bold text-lg leading-tight">
-                Entrar para uma Equipe
+                Entrar em uma Equipe
               </h3>
               <p className="text-xs text-blue-200 mt-0.5">
-                Vincule-se como competidor em um time já existente
+                Validação exclusiva por Código do Capitão
               </p>
             </div>
           </div>
@@ -123,28 +88,12 @@ export default function EntrarEquipeModal({
           </button>
         </div>
 
-        {/* Tab switch */}
-        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-3">
-          <button
-            onClick={() => setMode("code")}
-            className={`pb-3 text-xs font-bold font-['Space_Grotesk'] tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
-              mode === "code"
-                ? "border-[#00356a] text-[#00356a]"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            🔑 Código de Convite
-          </button>
-          <button
-            onClick={() => setMode("list")}
-            className={`pb-3 text-xs font-bold font-['Space_Grotesk'] tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
-              mode === "list"
-                ? "border-[#00356a] text-[#00356a]"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            📋 Equipes Cadastradas ({teams.length})
-          </button>
+        {/* Security Alert Header */}
+        <div className="bg-[#edf4ff] border-b border-[#c2d9f5] px-6 py-3 flex items-start gap-2.5">
+          <span className="text-sm">🛡️</span>
+          <p className="text-[11px] text-[#00356a] leading-relaxed">
+            Para evitar invasões e entradas não autorizadas em equipes, o acesso só é liberado através do <strong>Código Único</strong> gerado pelo capitão.
+          </p>
         </div>
 
         {/* Form Body */}
@@ -152,74 +101,27 @@ export default function EntrarEquipeModal({
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-medium flex items-center gap-2">
               <span className="text-base">⚠️</span>
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
-          {mode === "code" ? (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 font-['Space_Grotesk']">
-                Código da Equipe / ID
-              </label>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 font-['Space_Grotesk']">
+              Código Único do Capitão
+            </label>
+            <div className="relative">
               <input
                 type="text"
-                value={teamCode}
-                onChange={(e) => setTeamCode(e.target.value)}
-                placeholder="Ex: #RA-2026-299 ou CYBERKNIGHTS"
-                className="w-full px-4 py-3 bg-[#f0f4fa] border border-slate-200 rounded-xl text-sm font-['Inter'] text-slate-900 focus:bg-white focus:border-[#00356a] focus:ring-2 focus:ring-[#00356a]/10 outline-none transition-all uppercase placeholder:normal-case placeholder:text-slate-400"
+                value={captainCode}
+                onChange={(e) => setCaptainCode(e.target.value.toUpperCase())}
+                placeholder="Ex: CAP-CYBE-3429"
+                className="w-full px-4 py-3 bg-[#f0f4fa] border border-slate-200 rounded-xl text-base font-mono font-bold text-[#00356a] tracking-wider focus:bg-white focus:border-[#00356a] focus:ring-2 focus:ring-[#00356a]/10 outline-none transition-all placeholder:text-slate-400 uppercase"
               />
-              <p className="text-[11px] text-slate-500 mt-1.5">
-                Peça o código de 7 dígitos ao capitão ou líder técnico da sua equipe.
-              </p>
             </div>
-          ) : (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 font-['Space_Grotesk']">
-                Selecione a Equipe
-              </label>
-              {loadingTeams ? (
-                <div className="p-4 text-center text-xs text-slate-500 animate-pulse">
-                  Carregando equipes ativas...
-                </div>
-              ) : teams.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-                  Nenhuma equipe encontrada no momento. Crie sua própria equipe!
-                </div>
-              ) : (
-                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100">
-                  {teams.map((t) => (
-                    <label
-                      key={t.id}
-                      className={`flex items-center justify-between p-3 cursor-pointer hover:bg-slate-50 transition-colors ${
-                        selectedTeamId === t.id ? "bg-blue-50/70 border-l-4 border-[#00356a]" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="team_select"
-                          checked={selectedTeamId === t.id}
-                          onChange={() => setSelectedTeamId(t.id)}
-                          className="accent-[#00356a]"
-                        />
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 uppercase">
-                            {t.name}
-                          </div>
-                          <div className="text-[10px] text-slate-500">
-                            {t.teamId || t.code || "Equipe Homologada"} • {t.members?.length || 0}/5 membros
-                          </div>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
-                        {t.status}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            <p className="text-[11px] text-slate-500 mt-1.5">
+              Solicite o código oficial diretamente ao capitão da equipe da qual você faz parte.
+            </p>
+          </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 font-['Space_Grotesk']">
@@ -239,9 +141,9 @@ export default function EntrarEquipeModal({
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
-            <span className="text-base">📌</span>
+            <span className="text-base">🔒</span>
             <p className="text-[11px] text-amber-800 leading-relaxed">
-              Ao ingressar na equipe, você terá acesso à credencial de box, ao passaporte técnico do robô e às lutas marcadas da equipe no telão.
+              <strong>Atenção:</strong> A escolha da equipe é feita uma única vez e <strong>sem direito de alteração</strong> posterior. Verifique com seu capitão antes de confirmar.
             </p>
           </div>
         </div>
@@ -262,7 +164,7 @@ export default function EntrarEquipeModal({
             {submitting ? (
               <>
                 <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                VINCULANDO...
+                VALIDANDO CÓDIGO...
               </>
             ) : (
               "CONFIRMAR ENTRADA →"
@@ -273,3 +175,4 @@ export default function EntrarEquipeModal({
     </div>
   );
 }
+

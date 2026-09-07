@@ -289,7 +289,10 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         name: data.name || data.nome || (role === "ADMIN" ? "Administrador" : "Aluno Competidor"),
         email: email.trim(),
         cargo: data.cargo || data.role || role,
-        teamId: data.teamId,
+        teamId: data.teamId || undefined,
+        teamName: data.teamName || undefined,
+        captainCode: data.captainCode || undefined,
+        robotName: data.robotName || undefined,
       }, remember);
       onSubmit(data.cargo || role, data.userId);
     } catch (err) {
@@ -1324,24 +1327,12 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
               <LoginScreen
                 role={role} setRole={setRole}
                 onRegister={() => setScreen("register")}
-                onSubmit={async (userRole: string, userId: string) => {
+                onSubmit={async (userRole: string) => {
                   setRole(userRole === "ADMIN" ? "ADMIN" : "ALUNO");
                   if (userRole === "ADMIN" || userRole === "PROFESSOR") {
                     onAdminLogin?.();
                   } else {
-                    // Check if they already have a team
-                    try {
-                      const res = await fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" });
-                      const teams = await res.json();
-                      const userTeam = teams.find((t: any) => t.criadorId === userId);
-                      if (userTeam) {
-                        onStudentLogin?.();
-                      } else {
-                        setScreen("register-team");
-                      }
-                    } catch (err) {
-                      setScreen("register-team");
-                    }
+                    onStudentLogin?.();
                   }
                 }}
               />
@@ -1366,7 +1357,7 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
                   if (userData.cargo === "ADMIN" || userData.cargo === "PROFESSOR") {
                     onAdminLogin?.();
                   } else {
-                    setScreen("register-team");
+                    onStudentLogin?.();
                   }
                 }}
               />

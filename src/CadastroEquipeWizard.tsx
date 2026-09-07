@@ -158,8 +158,8 @@ export default function CadastroEquipeWizard({
         grade: memberGrade,
         document: memberDoc.trim(),
         role: memberRole,
-        termFile: memberTermName || "termo_assinado.pdf",
-        docStatus: memberTermName ? "approved" : "pending",
+        termFile: "termo_assinado.pdf",
+        docStatus: "approved",
         initials,
         color: avatarColors[members.length % avatarColors.length],
         uid: `UID: NR-2026-${String(Math.floor(10 + Math.random() * 890)).padStart(3, "0")}`,
@@ -621,51 +621,6 @@ export default function CadastroEquipeWizard({
                   </select>
                 </div>
 
-                {/* Termo de Ciência */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Termo de Ciência:
-                    </label>
-                    <a
-                      href="https://bit.ly/7torneioderoboticasenac"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] text-[#00356a] hover:underline font-semibold"
-                    >
-                      Baixar Modelo ↗
-                    </a>
-                  </div>
-
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                  />
-
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-300 hover:border-[#00356a] bg-blue-50/30 rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-[#00356a] flex items-center justify-center text-base">
-                      ☁️
-                    </div>
-                    {memberTermName ? (
-                      <p className="text-xs font-bold text-emerald-700 break-all">
-                        ✓ {memberTermName}
-                      </p>
-                    ) : (
-                      <>
-                        <p className="text-xs font-bold text-slate-700">
-                          Click to upload or drag & drop
-                        </p>
-                        <p className="text-[10px] text-slate-400">PDF, PNG OR JPG (MAX 5MB)</p>
-                      </>
-                    )}
-                  </div>
-                </div>
 
                 <button
                   type="button"
@@ -693,7 +648,7 @@ export default function CadastroEquipeWizard({
                       <thead>
                         <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           <th className="py-2.5">NOME COMPLETO</th>
-                          <th className="py-2.5 text-center">TERMO DE CIÊNCIA</th>
+                          <th className="py-2.5 text-center">STATUS</th>
                           <th className="py-2.5">LAST UPDATE</th>
                           <th className="py-2.5 text-right">ACTIONS</th>
                         </tr>

@@ -222,14 +222,218 @@ function decisionStatusBadge(status: MemberDocStatus) {
   );
 }
 
+// ─── Admin Action Modals ─────────────────────────────────────────────────────
+
+function ConfirmDeleteModal({
+  team,
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  team: Team;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" style={{ background: "rgba(5,29,48,0.6)", backdropFilter: "blur(4px)" }}>
+      <div className="bg-white rounded-[16px] p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#fee2e2]">
+        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-5 text-[#dc2626]">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
+        </div>
+        <h3 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[20px] text-[#051d30] text-center mb-2">
+          Excluir Equipe?
+        </h3>
+        <p className="text-[13px] text-[#475569] text-center mb-6 leading-relaxed">
+          Tem certeza de que deseja excluir a equipe <strong className="text-[#051d30]">{team.fullName}</strong> ({team.teamId})?
+          Esta ação é <span className="text-[#dc2626] font-semibold">permanente</span> e desvinculará todos os {team.members.length} participantes da equipe.
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onClose}
+            className="flex-1 py-3 px-4 rounded-[8px] text-[13px] font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="flex-1 py-3 px-4 rounded-[8px] text-[13px] font-bold text-white bg-[#dc2626] hover:bg-[#b91c1c] transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              "Confirmar Exclusão"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TransferMemberModal({
+  member,
+  fromTeam,
+  teams,
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  member: Member;
+  fromTeam: Team;
+  teams: Team[];
+  onClose: () => void;
+  onConfirm: (targetTeamId: string) => void;
+  loading: boolean;
+}) {
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const availableTeams = teams.filter((t) => t.id !== fromTeam.id);
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" style={{ background: "rgba(5,29,48,0.6)", backdropFilter: "blur(4px)" }}>
+      <div className="bg-white rounded-[16px] p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-[#cfe5ff]">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-12 h-12 rounded-[8px] flex items-center justify-center text-white font-bold text-[18px] shrink-0" style={{ background: member.color || "#00356a" }}>
+            {member.initials}
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#00356a]">TRANSFERIR INTEGRANTE</span>
+            <h3 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[18px] text-[#051d30]">
+              {member.name}
+            </h3>
+            <p className="text-[12px] text-[#64748b]">
+              Equipe atual: <strong className="text-[#051d30]">{fromTeam.fullName}</strong> ({fromTeam.members.length}/5)
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-[11px] font-bold text-[#475569] uppercase tracking-[1px] mb-2">
+            Selecione a Equipe de Destino:
+          </label>
+          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+            {availableTeams.length === 0 ? (
+              <p className="text-[13px] text-[#94a3b8] py-4 text-center">Nenhuma outra equipe cadastrada no sistema.</p>
+            ) : (
+              availableTeams.map((t) => {
+                const isFull = (t.members || []).length >= 5;
+                const isSelected = selectedTeamId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => {
+                      if (!isFull) setSelectedTeamId(t.id);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-[8px] border transition-all cursor-pointer ${
+                      isFull
+                        ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
+                        : isSelected
+                        ? "bg-[#edf4ff] border-[#00356a] ring-2 ring-[#00356a]/20"
+                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-[6px] bg-[#f1f5f9] flex items-center justify-center font-bold text-[12px] text-[#475569]">
+                        {t.name[0]}
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-[#051d30]">{t.fullName}</p>
+                        <p className="text-[10px] text-[#64748b]">ID: {t.teamId}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          isFull
+                            ? "bg-red-100 text-red-700"
+                            : (t.members || []).length >= 4
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {isFull ? "Lotada (5/5)" : `${(t.members || []).length}/5 membros`}
+                      </span>
+                      <input
+                        type="radio"
+                        name="targetTeam"
+                        checked={isSelected}
+                        disabled={isFull}
+                        onChange={() => setSelectedTeamId(t.id)}
+                        className="accent-[#00356a] cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Info box */}
+        <div className="bg-[#edf4ff] border border-[#c2d9f5] rounded-[8px] p-3 mb-6 flex items-start gap-2.5">
+          <svg className="w-4 h-4 text-[#00356a] shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <p className="text-[11px] text-[#00356a] leading-relaxed">
+            A transferência preservará a validação de documentos do participante e adicionará um registro de auditoria documentando a mudança de equipe pelo Administrador.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onClose}
+            className="flex-1 py-3 px-4 rounded-[8px] text-[13px] font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={loading || !selectedTeamId}
+            onClick={() => onConfirm(selectedTeamId)}
+            className="flex-1 py-3 px-4 rounded-[8px] text-[13px] font-bold text-white bg-[#00356a] hover:bg-[#002850] transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Transferindo...
+              </>
+            ) : (
+              "Confirmar Transferência"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MemberDetail view ───────────────────────────────────────────────────────
 
 function MemberDetail({
-  member, teamName, onBack, onUpdate,
+  member, teamName, onBack, onUpdate, onTransfer,
 }: {
   member: Member; teamName: string;
   onBack: () => void;
   onUpdate: (m: Member) => void;
+  onTransfer?: () => void;
 }) {
   const [rejectReason, setRejectReason] = useState("");
   const [toast, setToast] = useState("");
@@ -248,7 +452,7 @@ function MemberDetail({
       approvedBy: "Admin Panel",
       history: [
         { date: now, label: "Aprovação", type: "approved", by: "Admin Panel" },
-        ...member.history,
+        ...(member.history || []),
       ],
     });
     showToast("Participante aprovado com sucesso.");
@@ -264,7 +468,7 @@ function MemberDetail({
       history: [
         { date: now, label: "Upload de Correção", type: "resubmit", note: rejectReason, by: "Admin" },
         { date: now, label: "Reprovação Anterior", type: "rejected", by: "Admin", note: rejectReason },
-        ...member.history,
+        ...(member.history || []),
       ],
     });
     setRejectReason("");
@@ -275,7 +479,7 @@ function MemberDetail({
     const now = new Date().toLocaleDateString("pt-BR") + ", " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     onUpdate({
       ...member,
-      history: [{ date: now, label: "Alerta Enviado", type: "rejected", by: "Admin" }, ...member.history],
+      history: [{ date: now, label: "Alerta Enviado", type: "rejected", by: "Admin" }, ...(member.history || [])],
     });
     showToast("Alerta enviado ao participante.");
   }
@@ -292,7 +496,7 @@ function MemberDetail({
       docStatus: "pending",
       approvalDate: undefined,
       approvedBy: undefined,
-      history: [{ date: now, label: "Aprovação Revogada", type: "rejected", by: "Admin Panel" }, ...member.history],
+      history: [{ date: now, label: "Aprovação Revogada", type: "rejected", by: "Admin Panel" }, ...(member.history || [])],
     });
     showToast("Aprovação revogada.");
   }
@@ -308,13 +512,29 @@ function MemberDetail({
         </div>
       )}
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-5">
-        <button onClick={onBack} className="text-[11px] font-medium text-[#8c9ab0] hover:text-[#00356a] tracking-[1px] uppercase transition-colors">
-          PARTICIPANTES
-        </button>
-        <span className="text-[#8c9ab0] text-[11px]">›</span>
-        <span className="text-[11px] font-bold text-[#051d30] tracking-[1px] uppercase">{member.name.toUpperCase()}</span>
+      {/* Breadcrumb & Actions */}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="text-[11px] font-medium text-[#8c9ab0] hover:text-[#00356a] tracking-[1px] uppercase transition-colors">
+            PARTICIPANTES
+          </button>
+          <span className="text-[#8c9ab0] text-[11px]">›</span>
+          <span className="text-[11px] font-bold text-[#051d30] tracking-[1px] uppercase">{(member.name || "Participante").toUpperCase()}</span>
+        </div>
+        {onTransfer && (
+          <button
+            onClick={onTransfer}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[11px] font-bold text-[#00356a] bg-white border border-[#00356a]/30 hover:bg-[#edf4ff] transition-colors shadow-xs cursor-pointer"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            MOVER DE EQUIPE
+          </button>
+        )}
       </div>
 
       {/* Resubmission alert banner */}
@@ -363,36 +583,6 @@ function MemberDetail({
             </div>
           </div>
 
-          {/* Documentação Digitalizada */}
-          <div className="bg-white rounded-[10px] p-6" style={{ border: "1px solid rgba(194,198,210,0.3)" }}>
-            <div className="flex items-center gap-2 mb-4">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <h3 className="font-semibold text-[14px] text-[#051d30]">Documentação Digitalizada</h3>
-            </div>
-            {[
-              { label: "PDF de Identidade", meta: "ENVIADO EM 12/02/2024" },
-              { label: "Direito de Imagem", meta: "Verified on Oct 14, 2023" },
-            ].map((doc) => (
-              <div key={doc.label} className="flex items-center justify-between py-3" style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-1 self-stretch rounded-full" style={{ background: docOk ? "#10b981" : "#ef4444" }} />
-                  <div className="flex items-center gap-3">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={docOk ? "#10b981" : "#ef4444"} strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <div>
-                      <p className="text-[13px] font-medium text-[#051d30]">{doc.label}</p>
-                      <p className="text-[10px] text-[#8c9ab0] uppercase tracking-[0.5px]">{doc.meta}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {docOk && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
-                  <button className="hover:opacity-70 transition-opacity">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
 
           {/* Notas do juiz */}
           {member.judgeNote && (
@@ -478,17 +668,17 @@ function MemberDetail({
           </div>
 
           {/* Activity history */}
-          {member.history.length > 0 && (
+          {(member.history || []).length > 0 && (
             <div className="bg-white rounded-[10px] p-5" style={{ border: "1px solid rgba(194,198,210,0.3)" }}>
               <h3 className="font-semibold text-[13px] text-[#051d30] mb-4">Histórico de Atividade</h3>
               <div className="flex flex-col gap-4">
-                {member.history.map((h, i) => {
+                {(member.history || []).map((h, i) => {
                   const dotColor = h.type === "approved" ? "#16a34a" : h.type === "rejected" ? "#dc2626" : h.type === "resubmit" ? "#f59e0b" : "#94a3b8";
                   return (
                     <div key={i} className="flex gap-3">
                       <div className="flex flex-col items-center">
                         <div className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ background: dotColor }} />
-                        {i < member.history.length - 1 && <div className="w-px flex-1 mt-1" style={{ background: "#e2e8f0" }} />}
+                        {i < (member.history || []).length - 1 && <div className="w-px flex-1 mt-1" style={{ background: "#e2e8f0" }} />}
                       </div>
                       <div className="flex-1 pb-1">
                         <p className="text-[12px] font-semibold text-[#051d30]">{h.label}</p>
@@ -507,7 +697,7 @@ function MemberDetail({
                 })}
               </div>
               {member.docStatus !== "approved" && (
-                <p className="mt-3 text-[10px] text-[#94a3b8]">• última modificação pelo sistema em {member.history[0]?.date ?? "—"}</p>
+                <p className="mt-3 text-[10px] text-[#94a3b8]">• última modificação pelo sistema em {member.history?.[0]?.date ?? "—"}</p>
               )}
             </div>
           )}
@@ -520,12 +710,14 @@ function MemberDetail({
 // ─── TeamProfile view ────────────────────────────────────────────────────────
 
 function TeamProfile({
-  team, onBack, onMemberClick, onUpdate,
+  team, onBack, onMemberClick, onUpdate, onDeleteTeam, onTransferMember,
 }: {
   team: Team;
   onBack: () => void;
   onMemberClick: (m: Member) => void;
   onUpdate: (t: Team) => void;
+  onDeleteTeam?: (t: Team) => void;
+  onTransferMember?: (m: Member) => void;
 }) {
   const [search, setSearch] = useState("");
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -535,9 +727,9 @@ function TeamProfile({
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3000); }
 
-  const filtered = team.members.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.role.toLowerCase().includes(search.toLowerCase())
+  const filtered = (team.members || []).filter((m) =>
+    (m.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (m.role || "").toLowerCase().includes(search.toLowerCase())
   );
 
   function approveAll() {
@@ -581,11 +773,26 @@ function TeamProfile({
       )}
 
       {/* Header row */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
-          <button onClick={onBack} className="flex items-center gap-1 text-[10px] font-semibold tracking-[1.5px] uppercase text-[#f59e0b] hover:underline mb-1">
-            ← TEAM PROFILE
-          </button>
+          <div className="flex items-center gap-3 mb-1">
+            <button onClick={onBack} className="flex items-center gap-1 text-[10px] font-semibold tracking-[1.5px] uppercase text-[#f59e0b] hover:underline cursor-pointer">
+              ← TEAM PROFILE
+            </button>
+            {onDeleteTeam && (
+              <button
+                onClick={() => onDeleteTeam(team)}
+                className="flex items-center gap-1 text-[10px] font-bold tracking-[1px] uppercase text-[#dc2626] hover:bg-red-50 px-2.5 py-1 rounded border border-[#dc2626]/30 transition-colors cursor-pointer"
+                title="Excluir equipe do campeonato"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Excluir Equipe
+              </button>
+            )}
+          </div>
           <h1 className="font-bold text-[36px] text-[#051d30] leading-tight">{team.fullName}</h1>
           <p className="text-[13px] text-[#475569] mt-0.5">
             Verification status:{" "}
@@ -660,14 +867,27 @@ function TeamProfile({
             </div>
             {/* Doc status badge */}
             <div style={{ minWidth: 160 }}>{memberDocBadge(m.docStatus)}</div>
-            {/* Doc icons */}
+            {/* Actions */}
             <div className="flex items-center gap-3 ml-auto">
-              {[{ label: "IDENTITY" }, { label: "IMAGE RIGHTS" }].map((d) => (
-                <div key={d.label} className="flex flex-col items-center gap-1">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <span className="text-[8px] text-[#94a3b8] uppercase tracking-[0.3px]">{d.label}</span>
-                </div>
-              ))}
+              {onTransferMember && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTransferMember(m);
+                  }}
+                  className="px-2.5 py-1 rounded-[6px] text-[11px] font-bold text-[#00356a] bg-[#edf4ff] hover:bg-[#d8e8fc] border border-[#c2d9f5] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Mover participante para outra equipe"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="17 1 21 5 17 9" />
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                    <polyline points="7 23 3 19 7 15" />
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                  </svg>
+                  Mover
+                </button>
+              )}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </div>
           </div>
@@ -733,10 +953,11 @@ function TeamProfile({
 // ─── TeamList view ───────────────────────────────────────────────────────────
 
 function TeamList({
-  teams, onSelectTeam,
+  teams, onSelectTeam, onDeleteTeam,
 }: {
   teams: Team[];
   onSelectTeam: (t: Team) => void;
+  onDeleteTeam?: (t: Team) => void;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Categoria: Sumô");
@@ -745,9 +966,11 @@ function TeamList({
   const approved = teams.filter((t) => t.status === "APROVADO").length;
 
   const filtered = teams.filter((t) => {
+    const nameStr = t.fullName || t.name || "";
+    const idStr = t.teamId || "";
     const matchSearch =
-      t.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      t.teamId.toLowerCase().includes(search.toLowerCase());
+      nameStr.toLowerCase().includes(search.toLowerCase()) ||
+      idStr.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "Categoria: Sumô" || filter === "Status: Todos" || filter === "Todas as Categorias" || t.status === filter;
     return matchSearch && matchFilter;
   });
@@ -778,7 +1001,7 @@ function TeamList({
             placeholder="Buscar por nome da equipe, mentor ou ID..."
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <button className="px-5 rounded-[6px] text-[12px] font-bold text-white" style={{ background: "#051d30", height: 40 }}>
+        <button className="px-5 rounded-[6px] text-[12px] font-bold text-white cursor-pointer" style={{ background: "#051d30", height: 40 }}>
           FILTRAR
         </button>
         <div className="relative">
@@ -806,13 +1029,13 @@ function TeamList({
               {/* Logo */}
               <div className="w-[52px] h-[52px] rounded-[6px] overflow-hidden shrink-0 bg-[#f1f5f9] flex items-center justify-center">
                 {team.logo
-                  ? <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
-                  : <span className="text-[16px] font-bold text-[#94a3b8]">{team.name[0]}</span>}
+                  ? <img src={team.logo} alt={team.name || team.fullName} className="w-full h-full object-cover" />
+                  : <span className="text-[16px] font-bold text-[#94a3b8]">{(team.name || team.fullName || "E")[0]}</span>}
               </div>
               {/* Name + ID */}
               <div style={{ width: 180 }}>
-                <p className="font-bold text-[15px] text-[#051d30]">{team.name}</p>
-                <p className="font-normal text-[13px] text-[#051d30]">{team.fullName.replace(team.name, "").trim() || team.fullName}</p>
+                <p className="font-bold text-[15px] text-[#051d30]">{team.name || team.fullName}</p>
+                <p className="font-normal text-[13px] text-[#051d30]">{(team.fullName || "").replace(team.name || "", "").trim() || team.fullName || team.name}</p>
                 <p className="text-[10px] text-[#8c9ab0] mt-0.5">ID: {team.teamId}</p>
               </div>
               {/* Member avatars */}
@@ -851,10 +1074,32 @@ function TeamList({
               </div>
               {/* Status */}
               <div style={{ minWidth: 120 }}>{statusChip(team.status)}</div>
-              {/* Eye */}
-              <button className="p-2 rounded-full hover:bg-[#edf4ff] transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00356a" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
+              {/* Actions: Eye & Delete */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="p-2 rounded-full hover:bg-[#edf4ff] text-[#00356a] transition-colors cursor-pointer"
+                  title="Ver perfil da equipe"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                {onDeleteTeam && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteTeam(team);
+                    }}
+                    className="p-2 rounded-full hover:bg-red-50 text-[#94a3b8] hover:text-[#dc2626] transition-colors cursor-pointer"
+                    title="Excluir equipe"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -885,6 +1130,17 @@ export default function TeamsPage({
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>({ type: "list" });
+
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [deletingTeam, setDeletingTeam] = useState(false);
+  const [transferTarget, setTransferTarget] = useState<{ member: Member; team: Team } | null>(null);
+  const [transferringMember, setTransferringMember] = useState(false);
+  const [globalToast, setGlobalToast] = useState("");
+
+  function showGlobalToast(msg: string) {
+    setGlobalToast(msg);
+    setTimeout(() => setGlobalToast(""), 3500);
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -917,10 +1173,94 @@ export default function TeamsPage({
       .finally(() => setLoading(false));
   }, []);
 
-
   function navigate(key: string) {
     if (key === "times") setView({ type: "list" });
     else onNavigate(key);
+  }
+
+  async function handleConfirmDeleteTeam() {
+    if (!teamToDelete) return;
+    setDeletingTeam(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/Equipes/${teamToDelete.id}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao excluir equipe.");
+      }
+
+      setTeams((prev) => prev.filter((t) => t.id !== teamToDelete.id));
+      if (view.type !== "list" && view.teamId === teamToDelete.id) {
+        setView({ type: "list" });
+      }
+      showGlobalToast(`Equipe "${teamToDelete.fullName}" excluída com sucesso!`);
+      setTeamToDelete(null);
+    } catch (err: any) {
+      console.error("Erro ao excluir equipe:", err);
+      showGlobalToast(err.message || "Erro ao excluir equipe.");
+    } finally {
+      setDeletingTeam(false);
+    }
+  }
+
+  async function handleConfirmTransferMember(targetTeamId: string) {
+    if (!transferTarget) return;
+    const { member, team: fromTeam } = transferTarget;
+    setTransferringMember(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/Equipes/transfer-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          fromTeamId: fromTeam.id,
+          toTeamId: targetTeamId,
+          memberIdentifier: member.id || member.cpf
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao transferir participante.");
+      }
+
+      const updatedMember: Member = data.member || {
+        ...member,
+        team: teams.find((t) => t.id === targetTeamId)?.name.toUpperCase() || "NOVA EQUIPE",
+      };
+
+      setTeams((prev) =>
+        prev.map((t) => {
+          if (t.id === fromTeam.id) {
+            return {
+              ...t,
+              members: t.members.filter((m) => m.id !== member.id && m.cpf !== member.cpf)
+            };
+          }
+          if (t.id === targetTeamId) {
+            return {
+              ...t,
+              members: [...t.members, updatedMember]
+            };
+          }
+          return t;
+        })
+      );
+
+      if (view.type === "member" && view.memberId === member.id) {
+        setView({ type: "team", teamId: targetTeamId });
+      }
+
+      const destTeamName = teams.find((t) => t.id === targetTeamId)?.fullName || "nova equipe";
+      showGlobalToast(`Participante "${member.name}" transferido para "${destTeamName}" com sucesso!`);
+      setTransferTarget(null);
+    } catch (err: any) {
+      console.error("Erro ao transferir participante:", err);
+      showGlobalToast(err.message || "Erro ao transferir participante.");
+    } finally {
+      setTransferringMember(false);
+    }
   }
 
   async function updateTeam(updated: Team) {
@@ -975,6 +1315,37 @@ export default function TeamsPage({
 
   return (
     <div className="fixed inset-0 z-[800] flex overflow-hidden bg-[#f7f9ff]">
+      {/* Global Toast */}
+      {globalToast && (
+        <div className="fixed top-5 right-5 z-[1000] bg-[#051d30] text-white text-sm px-5 py-3.5 rounded-lg shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top duration-200">
+          <svg className="w-5 h-5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span className="font-medium">{globalToast}</span>
+        </div>
+      )}
+
+      {/* Modals */}
+      {teamToDelete && (
+        <ConfirmDeleteModal
+          team={teamToDelete}
+          onClose={() => setTeamToDelete(null)}
+          onConfirm={handleConfirmDeleteTeam}
+          loading={deletingTeam}
+        />
+      )}
+
+      {transferTarget && (
+        <TransferMemberModal
+          member={transferTarget.member}
+          fromTeam={transferTarget.team}
+          teams={teams}
+          onClose={() => setTransferTarget(null)}
+          onConfirm={handleConfirmTransferMember}
+          loading={transferringMember}
+        />
+      )}
+
       <AdminSidebar active="times" onNavigate={navigate} onLogout={onLogout} />
       <div className="flex flex-col flex-1 overflow-hidden ml-0 md:ml-[256px]">
         {/* Top bar */}
@@ -1005,25 +1376,58 @@ export default function TeamsPage({
                 <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[16px]">Carregando equipes do MongoDB Atlas...</p>
               </div>
             ) : (
-              <TeamList teams={teams} onSelectTeam={(t) => setView({ type: "team", teamId: t.id })} />
+              <TeamList
+                teams={teams}
+                onSelectTeam={(t) => setView({ type: "team", teamId: t.id })}
+                onDeleteTeam={(t) => setTeamToDelete(t)}
+              />
             )
           )}
 
-          {view.type === "team" && activeTeam && (
-            <TeamProfile
-              team={activeTeam}
-              onBack={() => setView({ type: "list" })}
-              onMemberClick={(m) => setView({ type: "member", teamId: activeTeam.id, memberId: m.id })}
-              onUpdate={updateTeam}
-            />
+          {view.type === "team" && (
+            activeTeam ? (
+              <TeamProfile
+                team={activeTeam}
+                onBack={() => setView({ type: "list" })}
+                onMemberClick={(m) => setView({ type: "member", teamId: activeTeam.id, memberId: m.id })}
+                onUpdate={updateTeam}
+                onDeleteTeam={(t) => setTeamToDelete(t)}
+                onTransferMember={(m) => setTransferTarget({ member: m, team: activeTeam })}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-[#8c9ab0]">
+                <p className="text-[14px] font-semibold text-[#051d30] mb-3">Equipe não encontrada ou em carregamento.</p>
+                <button
+                  type="button"
+                  onClick={() => setView({ type: "list" })}
+                  className="px-4 py-2 bg-[#00356a] hover:bg-[#002850] text-white rounded-[6px] text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Voltar para a Lista de Times
+                </button>
+              </div>
+            )
           )}
-          {view.type === "member" && activeTeam && activeMember && (
-            <MemberDetail
-              member={activeMember}
-              teamName={activeTeam.fullName}
-              onBack={() => setView({ type: "team", teamId: activeTeam.id })}
-              onUpdate={(m) => { updateMember(activeTeam.id, m); }}
-            />
+          {view.type === "member" && (
+            activeTeam && activeMember ? (
+              <MemberDetail
+                member={activeMember}
+                teamName={activeTeam.fullName}
+                onBack={() => setView({ type: "team", teamId: activeTeam.id })}
+                onUpdate={(m) => { updateMember(activeTeam.id, m); }}
+                onTransfer={() => setTransferTarget({ member: activeMember, team: activeTeam })}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-[#8c9ab0]">
+                <p className="text-[14px] font-semibold text-[#051d30] mb-3">Participante não encontrado.</p>
+                <button
+                  type="button"
+                  onClick={() => setView({ type: "list" })}
+                  className="px-4 py-2 bg-[#00356a] hover:bg-[#002850] text-white rounded-[6px] text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Voltar para a Lista de Times
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>

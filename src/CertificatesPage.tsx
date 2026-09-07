@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import certTemplateImg from "./images/certificado_modelo.jpg";
 
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -248,71 +249,191 @@ function BadgeCard({ member, team, showPhoto, showQR, showSeal }: {
   );
 }
 
-// ─── Certificate preview ──────────────────────────────────────────────────────
-function CertCard({ member, team, placement, showQR }: {
-  member: Member; team: Team; placement: number; showQR: boolean;
+// ─── Certificate preview (Modelo Oficial) ────────────────────────────────────
+function CertCard({
+  member,
+  team,
+  placement,
+  showQR,
+}: {
+  member: Member;
+  team: Team;
+  placement: number;
+  showQR: boolean;
 }) {
-  const placelabel = ["1º Lugar", "2º Lugar", "3º Lugar", "4º Lugar", "5º Lugar"][placement - 1] ?? `${placement}º Lugar`;
+  const placementText = `${placement}ª`;
+
   return (
-    <div className="relative bg-white rounded-[12px] overflow-hidden shadow-2xl border border-[rgba(194,198,210,0.4)]" style={{ width: 320, userSelect: "none" }}>
-      {/* Top accent line */}
-      <div className="h-[4px]" style={{ background: "linear-gradient(90deg,#8c4f00,#00356a)" }} />
+    <div
+      className="relative w-full overflow-hidden shadow-2xl rounded-[8px] bg-white border border-[rgba(194,198,210,0.5)] select-none"
+      style={{
+        containerType: "inline-size",
+        aspectRatio: "1024 / 724",
+      }}
+    >
+      {/* Official Certificate Background Image */}
+      <img
+        src={certTemplateImg}
+        alt="Certificado de Participação"
+        className="w-full h-full block object-fill pointer-events-none"
+      />
 
-      {/* Content */}
-      <div className="flex flex-col items-center px-8 pt-8 pb-6 gap-4">
-        {/* Medal icon */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-14 h-14 rounded-full bg-[#edf4ff] border-4 border-[#c2d9f5] flex items-center justify-center">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#8c4f00" stroke="#8c4f00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <span className="font-['Liberation_Mono:Regular',monospace] text-[#8c4f00] text-[9px] tracking-[2px] uppercase">{placelabel}</span>
-        </div>
-
-        {/* Title */}
-        <div className="text-center">
-          <h3 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] leading-tight">Certificado de Excelência</h3>
-          <p className="font-['Inter:Regular',Inter,sans-serif] text-[#475569] text-[12px] leading-relaxed mt-2">
-            Pela participação e desempenho técnico exemplar na<br />
-            <strong className="text-[#051d30]">Robotic Sync Championship 2026</strong>
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="w-full flex items-center gap-3">
-          <div className="flex-1 h-px bg-[#e2e8f0]" />
-          <span className="font-['Liberation_Mono:Regular',monospace] text-[#b0bac8] text-[8px] tracking-[1px] uppercase">Concedido a</span>
-          <div className="flex-1 h-px bg-[#e2e8f0]" />
-        </div>
-
-        {/* Recipient */}
-        <div className="text-center">
-          <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[16px]">{member.name}</p>
-          <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[11px] uppercase tracking-[0.8px] mt-0.5">{member.role}</p>
-          <p className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[#00356a] text-[12px] uppercase tracking-[1px] mt-2">Equipe {team.name}</p>
-        </div>
-
-        {/* Signature line */}
-        <div className="w-full flex flex-col items-center gap-1 pt-2 border-t border-[#e2e8f0]">
-          <div className="w-32 h-px bg-[#051d30] mb-1" />
-          <p className="font-['Inter:Regular',Inter,sans-serif] text-[11px] text-[#051d30] font-semibold">Prof. Dr. Eduardo Silva</p>
-          <p className="font-['Inter:Regular',Inter,sans-serif] text-[10px] text-[#8c9ab0] uppercase tracking-[0.5px]">Coordenação Geral</p>
-        </div>
-
-        {/* QR + branding */}
-        <div className="w-full flex items-end justify-between pt-1">
-          <span className="font-['Liberation_Mono:Regular',monospace] text-[#c2c6d2] text-[8px] tracking-[1px] uppercase">robotic-sync.senac.edu.br</span>
-          {showQR && (
-            <div className="text-[#051d30] opacity-30">
-              <QR size={36} />
-            </div>
-          )}
-        </div>
+      {/* Participant Name & Team Tag Line (above the blue line at 50.8%) */}
+      <div
+        style={{
+          position: "absolute",
+          left: "12%",
+          right: "12%",
+          top: "44.2%",
+          height: "6.4%",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "2.15cqi",
+            fontWeight: 800,
+            color: "#051d30",
+            letterSpacing: "0.04cqi",
+            textTransform: "uppercase",
+            lineHeight: 1.1,
+          }}
+        >
+          {member.name}
+        </span>
+        <span
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: "1.4cqi",
+            fontWeight: 600,
+            color: "#00529b",
+            marginLeft: "0.9cqi",
+            lineHeight: 1.1,
+          }}
+        >
+          — Equipe {team.name}
+        </span>
       </div>
 
-      {/* Bottom accent */}
-      <div className="h-[3px]" style={{ background: "linear-gradient(90deg,#00356a,#8c4f00)" }} />
+      {/* Placement Inside the Blue Pill (at 66.0%) */}
+      <div
+        style={{
+          position: "absolute",
+          left: "37.6%",
+          top: "66.0%",
+          width: "25.4%",
+          height: "6.8%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "2.6cqi",
+            fontWeight: 800,
+            color: "#00356a",
+            lineHeight: 1,
+          }}
+        >
+          {placementText}
+        </span>
+      </div>
+
+      {/* Coordinator Signature & Name (above 'COORDENADOR DO EVENTO') */}
+      <div
+        style={{
+          position: "absolute",
+          left: "34%",
+          top: "73.2%",
+          width: "32%",
+          height: "7.6%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'Alex Brush', cursive, 'Brush Script MT'",
+            fontSize: "3.2cqi",
+            color: "#002b55",
+            transform: "rotate(-2deg)",
+            lineHeight: 0.9,
+          }}
+        >
+          Eduardo Silva
+        </span>
+        <span
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: "1.05cqi",
+            fontWeight: 700,
+            color: "#051d30",
+            letterSpacing: "0.04cqi",
+            marginTop: "0.1cqi",
+          }}
+        >
+          Prof. Dr. Eduardo Silva
+        </span>
+      </div>
+
+      {/* Optional QR Code for Authenticity */}
+      {showQR && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "3.2%",
+            left: "3.2%",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6cqi",
+            background: "rgba(5, 29, 48, 0.88)",
+            padding: "0.4cqi 0.8cqi",
+            borderRadius: "0.4cqi",
+            border: "1px solid rgba(0, 242, 255, 0.4)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div style={{ color: "#ffffff", flexShrink: 0 }}>
+            <QR size={28} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: "0.75cqi",
+                fontWeight: 700,
+                color: "#00f2ff",
+                letterSpacing: "0.05cqi",
+                textTransform: "uppercase",
+              }}
+            >
+              Autenticidade
+            </span>
+            <span
+              style={{
+                fontFamily: "monospace",
+                fontSize: "0.65cqi",
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              ID: {team.code}-{member.id.slice(-4).toUpperCase()}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -486,7 +607,7 @@ export default function CertificatesPage({
             backgroundColor: isBadge ? "#0a1f3a" : "#ffffff",
           });
 
-          const imgData = canvas.toDataURL("image/png");
+          const imgData = canvas.toDataURL("image/jpeg", 0.96);
 
           if (i > 0) {
             if (isBadge) {
@@ -499,7 +620,8 @@ export default function CertificatesPage({
           if (isBadge) {
             pdf.addImage(imgData, "PNG", 5, 5, 90, 140);
           } else {
-            pdf.addImage(imgData, "PNG", 15, 12, 267, 186);
+            // A4 landscape is exactly 297mm x 210mm. Template fills page completely without borders.
+            pdf.addImage(imgData, "JPEG", 0, 0, 297, 210);
           }
         }
       }
@@ -736,19 +858,22 @@ export default function CertificatesPage({
           </div>
 
           {/* Preview card */}
-          <div className="flex-1 flex items-center justify-center w-full bg-white rounded-[12px] border border-[rgba(194,198,210,0.4)] shadow-[0_1px_3px_rgba(0,0,0,0.05)] py-10">
-            <div ref={printRef} className="print-area">
-              {docType === "badge"
-                ? <BadgeCard member={previewMember} team={team} showPhoto={showPhoto} showQR={showQR} showSeal={showSeal} />
-                : <CertCard  member={previewMember} team={team} placement={placement} showQR={showQR} />
-              }
-            </div>
-            {/* visible copy */}
-            <div style={{ transform: "scale(1.05)", transformOrigin: "center" }}>
-              {docType === "badge"
-                ? <BadgeCard member={previewMember} team={team} showPhoto={showPhoto} showQR={showQR} showSeal={showSeal} />
-                : <CertCard  member={previewMember} team={team} placement={placement} showQR={showQR} />
-              }
+          <div className="flex-1 flex items-center justify-center w-full bg-white rounded-[12px] border border-[rgba(194,198,210,0.4)] shadow-[0_1px_3px_rgba(0,0,0,0.05)] py-8 px-4">
+            <div
+              style={{
+                width: docType === "badge" ? "320px" : "100%",
+                maxWidth: docType === "badge" ? "320px" : "700px",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              {docType === "badge" ? (
+                <div style={{ transform: "scale(1.05)", transformOrigin: "center" }}>
+                  <BadgeCard member={previewMember} team={team} showPhoto={showPhoto} showQR={showQR} showSeal={showSeal} />
+                </div>
+              ) : (
+                <CertCard member={previewMember} team={team} placement={placement} showQR={showQR} />
+              )}
             </div>
           </div>
 
@@ -827,7 +952,7 @@ export default function CertificatesPage({
           position: "fixed",
           left: -9999,
           top: 0,
-          width: docType === "badge" ? 300 : 850,
+          width: docType === "badge" ? 300 : 1024,
           zIndex: -1,
           opacity: 1,
           pointerEvents: "none",
@@ -839,7 +964,8 @@ export default function CertificatesPage({
             id={`export-card-${m.id}`}
             className="print-page-break"
             style={{
-              padding: "16px 0",
+              padding: docType === "badge" ? "16px 0" : "0",
+              width: docType === "badge" ? "300px" : "1024px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -849,7 +975,9 @@ export default function CertificatesPage({
             {docType === "badge" ? (
               <BadgeCard member={m} team={team} showPhoto={showPhoto} showQR={showQR} showSeal={showSeal} />
             ) : (
-              <CertCard member={m} team={team} placement={placement} showQR={showQR} />
+              <div style={{ width: "1024px", height: "724px" }}>
+                <CertCard member={m} team={team} placement={placement} showQR={showQR} />
+              </div>
             )}
           </div>
         ))}

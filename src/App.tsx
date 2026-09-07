@@ -619,52 +619,118 @@ function GlobalStyles() {
   return <style>{CSS}</style>;
 }
 
+function isAdminRole(cargo?: string) {
+  if (!cargo) return false;
+  const upper = cargo.toUpperCase();
+  return upper === "ADMIN" || upper === "PROFESSOR";
+}
+
+function isAlunoRole(cargo?: string) {
+  if (!cargo) return false;
+  const upper = cargo.toUpperCase();
+  return upper === "ALUNO" || upper === "COMPETIDOR";
+}
+
+const ADMIN_ROUTES = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
+
 /* ─── App ─────────────────────────────────────────────────────────────── */
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
+
+  // Inicialização segura: só autoriza exibição se a sessão comprovar o cargo
   const [showAdmin, setShowAdmin] = useState(() => {
     const session = getUserSession();
-    if (session && (session.cargo === "ADMIN" || session.cargo === "PROFESSOR" || session.cargo === "admin")) {
-      return true;
-    }
     const p = window.location.pathname.toLowerCase();
-    const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
-    return adminRoutes.some(r => p.startsWith(r));
-  });
-  const [showAluno, setShowAluno] = useState(() => {
-    const session = getUserSession();
-    if (session && (session.cargo === "ALUNO" || session.cargo === "COMPETIDOR" || session.cargo === "aluno")) {
-      return true;
-    }
-    return window.location.pathname.toLowerCase().startsWith("/aluno");
+    const isTryingAdmin = ADMIN_ROUTES.some((r) => p.startsWith(r));
+    return isTryingAdmin && isAdminRole(session?.cargo);
   });
 
-  useEffect(() => {
-    const onPopState = () => {
-      const session = getUserSession();
-      const p = window.location.pathname.toLowerCase();
-      const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
-      if (adminRoutes.some(r => p.startsWith(r))) {
+  const [showAluno, setShowAluno] = useState(() => {
+    const session = getUserSession();
+    const p = window.location.pathname.toLowerCase();
+    const isTryingAluno = p.startsWith("/aluno");
+    return isTryingAluno && (isAlunoRole(session?.cargo) || isAdminRole(session?.cargo));
+  });
+
+  // Validador central de rotas (Route Guard)
+  const enforceRouteGuards = useCallback(() => {
+    const session = getUserSession();
+    const p = window.location.pathname.toLowerCase();
+    const isTryingAdmin = ADMIN_ROUTES.some((r) => p.startsWith(r));
+    const isTryingAluno = p.startsWith("/aluno");
+
+    if (isTryingAdmin) {
+      if (isAdminRole(session?.cargo)) {
         setShowAdmin(true);
         setShowAluno(false);
-      } else if (p.startsWith("/aluno")) {
+        setShowLogin(false);
+      } else if (isAlunoRole(session?.cargo)) {
+        // Aluno tentando acessar rotas de administrador: BLOQUEAR!
+        setShowAdmin(false);
+        setShowAluno(true);
+        setShowLogin(false);
+        window.history.replaceState(null, "", "/aluno");
+        toast("Acesso negado: Alunos não têm autorização para acessar o painel de administração.", "🔒");
+      } else {
+        // Visitante não autenticado
+        setShowAdmin(false);
+        setShowAluno(false);
+        setShowLogin(true);
+        window.history.replaceState(null, "", "/");
+        toast("Acesso restrito. Faça login com credenciais de administrador.", "🔒");
+      }
+    } else if (isTryingAluno) {
+      if (isAlunoRole(session?.cargo) || isAdminRole(session?.cargo)) {
         setShowAluno(true);
         setShowAdmin(false);
-      } else if (p === "/" || p === "") {
-        if (!session) {
-          setShowAdmin(false);
-          setShowAluno(false);
-        }
+        setShowLogin(false);
+      } else {
+        // Visitante não autenticado tentando /aluno
+        setShowAdmin(false);
+        setShowAluno(false);
+        setShowLogin(true);
+        window.history.replaceState(null, "", "/");
+        toast("Acesso restrito. Faça login para acessar o Portal do Aluno.", "🔒");
       }
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    } else if (p === "/" || p === "") {
+      if (!session) {
+        setShowAdmin(false);
+        setShowAluno(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    enforceRouteGuards();
+    window.addEventListener("popstate", enforceRouteGuards);
+    return () => window.removeEventListener("popstate", enforceRouteGuards);
+  }, [enforceRouteGuards]);
 
   const openLogin = () => setShowLogin(true);
   const closeLogin = () => setShowLogin(false);
 
+  const handlePortalEntry = () => {
+    const session = getUserSession();
+    if (session) {
+      if (isAdminRole(session.cargo)) {
+        openAdmin();
+      } else if (isAlunoRole(session.cargo)) {
+        openAluno();
+      } else {
+        openLogin();
+      }
+    } else {
+      openLogin();
+    }
+  };
+
   const openAdmin = () => {
+    const session = getUserSession();
+    if (!isAdminRole(session?.cargo)) {
+      toast("Acesso negado: privilégios de administrador requeridos.", "🔒");
+      setShowLogin(true);
+      return;
+    }
     setShowLogin(false);
     setShowAdmin(true);
     setShowAluno(false);
@@ -674,6 +740,12 @@ export default function App() {
   };
 
   const openAluno = () => {
+    const session = getUserSession();
+    if (!isAlunoRole(session?.cargo) && !isAdminRole(session?.cargo)) {
+      toast("Acesso restrito: faça login como aluno.", "🔒");
+      setShowLogin(true);
+      return;
+    }
     setShowLogin(false);
     setShowAluno(true);
     setShowAdmin(false);
@@ -724,12 +796,12 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen w-full bg-[#f7f9ff]">
       <GlobalStyles />
-      <NavBar onLoginClick={openLogin} />
+      <NavBar onLoginClick={handlePortalEntry} />
       <div className="pt-[72px]">
         <HeroSection />
         <NewsSection />
-        <CtaSection onLoginClick={openLogin} />
-        <Footer onLoginClick={openLogin} />
+        <CtaSection onLoginClick={handlePortalEntry} />
+        <Footer onLoginClick={handlePortalEntry} />
       </div>
       <ScrollTop />
       <ToastContainer />

@@ -39,6 +39,7 @@ export interface UserSession {
   teamId?: string;
   teamName?: string;
   robotName?: string;
+  captainCode?: string;
   remember?: boolean;
 }
 

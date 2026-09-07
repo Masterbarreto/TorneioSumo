@@ -137,7 +137,7 @@ export default function AlunoOnboarding({
               <div className="bg-slate-50 rounded-2xl p-4 flex flex-col gap-2 border border-slate-100 text-xs text-slate-700">
                 <div className="flex items-center gap-2">
                   <span className="text-sky-600 font-bold">✓</span>
-                  <span>Insira o código da equipe (ex: #RA-2026-299)</span>
+                  <span>Insira o Código Único do Capitão (ex: CAP-CYBE-3429)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sky-600 font-bold">✓</span>
@@ -154,7 +154,7 @@ export default function AlunoOnboarding({
               onClick={onJoinTeam}
               className="w-full py-4 bg-white hover:bg-sky-50 text-[#00356a] border-2 border-[#00356a] rounded-xl text-xs font-bold font-['Space_Grotesk'] uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
             >
-              ENTRAR COM CÓDIGO →
+              ENTRAR COM CÓDIGO DO CAPITÃO →
             </button>
           </div>
         </div>

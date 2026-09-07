@@ -16,6 +16,7 @@ interface StudentTeam {
   id: string;
   name: string;
   code: string;
+  captainCode?: string;
   robotName: string;
   robotWeight: string;
   robotDimensions: string;
@@ -68,16 +69,23 @@ export default function AlunoPortal({
   });
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"equipe" | "partidas" | "credencial" | "regras">("equipe");
+  const [isCheckingTeam, setIsCheckingTeam] = useState<boolean>(() => {
+    const session = getUserSession();
+    return !(session && (session.teamId || session.teamName));
+  });
+
+  const [activeTab, setActiveTab] = useState<"equipe" | "partidas" | "regras">("equipe");
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCaptainCode, setCopiedCaptainCode] = useState(false);
 
   // Student team data
   const [team, setTeam] = useState<StudentTeam>({
     id: user?.teamId || "tm-sumo-01",
     name: user?.teamName || "CYBERKNIGHTS",
     code: "#TM-SUMO-01",
+    captainCode: "CAP-CYBE-3429",
     robotName: user?.robotName || "Kensei Blade 3.0",
     robotWeight: "2.985 kg (Homologado)",
     robotDimensions: "20 x 19.5 x 12 cm",
@@ -100,37 +108,92 @@ export default function AlunoPortal({
       }
     }
 
-    // Carregar confrontos reais da API do MongoDB
-    const fetchTournamentData = async () => {
+    // Carregar Equipes e Partidas da API
+    const loadPortalData = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/v1/partidas", { credentials: "include" });
-        if (res.ok) {
-          const list = await res.json();
-          if (Array.isArray(list)) {
-            setMatches(list);
-            const found = list.find(
-              (m: any) =>
-                m.team1?.name?.toLowerCase().includes("cyber") ||
-                m.team2?.name?.toLowerCase().includes("cyber")
-            );
-            if (found) {
-              const matchedTeam = found.team1?.name?.toLowerCase().includes("cyber") ? found.team1 : found.team2;
-              setTeam((prev) => ({
-                ...prev,
-                name: matchedTeam.name,
-                robotName: matchedTeam.robot || prev.robotName,
+        const sessionNow = getUserSession();
+        const userEmail = (sessionNow?.email || "").trim().toLowerCase();
+        const userName = (sessionNow?.name || "").trim().toLowerCase();
+
+        // 1. Carregar Equipes do torneio para identificar vínculo
+        const teamsRes = await fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" });
+        if (teamsRes.ok) {
+          const allTeams = await teamsRes.json();
+          if (Array.isArray(allTeams)) {
+            const myTeam = allTeams.find((t: any) => {
+              if (sessionNow?.teamId && (t.id === sessionNow.teamId || t._id === sessionNow.teamId || t.teamId === sessionNow.teamId)) return true;
+              if (sessionNow?.teamName && (t.name?.toLowerCase() === sessionNow.teamName.toLowerCase() || t.nome?.toLowerCase() === sessionNow.teamName.toLowerCase())) return true;
+              if (t.criadorId && sessionNow?.userId && t.criadorId === sessionNow.userId) return true;
+              const memberList = Array.isArray(t.members) ? t.members : (Array.isArray(t.membros) ? t.membros : []);
+              return memberList.some((m: any) => {
+                const mEmail = (m.email || "").trim().toLowerCase();
+                const mName = (m.name || m.nome || "").trim().toLowerCase();
+                return (userEmail && mEmail === userEmail) || (userName && mName === userName);
+              });
+            });
+
+            if (myTeam) {
+              const teamCode = myTeam.teamId || myTeam.code || `#RA-2026-${(myTeam.id || myTeam._id || "001").slice(-3)}`;
+              const memberList = Array.isArray(myTeam.members) ? myTeam.members : (Array.isArray(myTeam.membros) ? myTeam.membros : []);
+              const formattedMembers = memberList.map((m: any, idx: number) => ({
+                id: m.id || `m_${idx}`,
+                name: m.name || m.nome || "Competidor",
+                role: m.role || "Competidor Técnico",
+                avatarColor: m.color || "#00356a",
+                docStatus: m.docStatus || "approved",
               }));
+
+              const fullTeamObj: StudentTeam = {
+                id: (myTeam.id || myTeam._id || "").toString(),
+                name: myTeam.name || myTeam.nome || "Equipe Sumô",
+                code: teamCode,
+                captainCode: myTeam.captainCode || "CAP-2026",
+                robotName: myTeam.robotName || myTeam.robot || "Kensei Blade 3.0",
+                robotWeight: myTeam.robotWeight || "2.985 kg (Homologado)",
+                robotDimensions: myTeam.robotDimensions || "20 x 19.5 x 12 cm",
+                bladeType: myTeam.bladeType || "Aço Carbono Temperado 45°",
+                category: myTeam.category || "Heavyweight Sumô 3kg (Autônomo)",
+                status: myTeam.status || "EQUIPE HOMOLOGADA",
+                members: formattedMembers.length > 0 ? formattedMembers : [
+                  { id: "m1", name: sessionNow?.name || "Aluno Competidor", role: "Competidor Técnico", avatarColor: "#00356a", docStatus: "approved" }
+                ],
+              };
+
+              setTeam(fullTeamObj);
+              setView("portal");
+
+              if (sessionNow) {
+                const updated: UserSession = {
+                  ...sessionNow,
+                  teamId: fullTeamObj.id,
+                  teamName: fullTeamObj.name,
+                  captainCode: fullTeamObj.captainCode,
+                  robotName: fullTeamObj.robotName,
+                };
+                saveUserSession(updated, sessionNow.remember ?? true);
+                setUser(updated);
+              }
             }
           }
         }
+
+        // 2. Carregar confrontos reais da API do MongoDB
+        const matchesRes = await fetch("http://localhost:3000/api/v1/partidas", { credentials: "include" });
+        if (matchesRes.ok) {
+          const list = await matchesRes.json();
+          if (Array.isArray(list)) {
+            setMatches(list);
+          }
+        }
       } catch (err) {
-        console.warn("API de partidas offline ou em carregamento:", err);
+        console.warn("API de equipes ou partidas offline:", err);
       } finally {
+        setIsCheckingTeam(false);
         setLoading(false);
       }
     };
 
-    fetchTournamentData();
+    loadPortalData();
   }, []);
 
   const handleLogoutClick = () => {
@@ -149,6 +212,7 @@ export default function AlunoPortal({
       teamId: teamData.id || teamData._id || teamData.teamId,
       teamName: teamData.nome || teamData.name,
       robotName: teamData.robotName || "Kensei Blade 3.0",
+      captainCode: teamData.captainCode,
     };
     saveUserSession(updatedUser, current.remember ?? true);
     setUser(updatedUser);
@@ -157,6 +221,7 @@ export default function AlunoPortal({
       id: teamData.id || teamData._id || "tm-new",
       name: teamData.nome || teamData.name || "NOVA EQUIPE",
       code: teamData.teamId || `#RA-2026-${Math.floor(100 + Math.random() * 900)}`,
+      captainCode: teamData.captainCode || "CAP-NOVA-2026",
       robotName: teamData.robotName || "Kensei Blade 3.0",
       robotWeight: "2.985 kg (Homologado)",
       robotDimensions: "20 x 19.5 x 12 cm",
@@ -186,6 +251,7 @@ export default function AlunoPortal({
       teamId: teamData.id || teamData._id,
       teamName: teamData.name || teamData.nome,
       robotName: teamData.robotName || "Kensei Blade 3.0",
+      captainCode: teamData.captainCode,
     };
     saveUserSession(updatedUser, current.remember ?? true);
     setUser(updatedUser);
@@ -194,6 +260,7 @@ export default function AlunoPortal({
       id: teamData.id || teamData._id || "tm-joined",
       name: teamData.name || teamData.nome,
       code: teamData.code || teamData.teamId || `#RA-2026-001`,
+      captainCode: teamData.captainCode || "CAP-CYBE-3429",
       robotName: teamData.robotName || "Kensei Blade 3.0",
       robotWeight: "2.985 kg (Homologado)",
       robotDimensions: "20 x 19.5 x 12 cm",
@@ -214,7 +281,26 @@ export default function AlunoPortal({
   };
 
   // 1. View: Onboarding (Primeiro Acesso)
+  // SE O USUÁRIO JÁ TIVER UMA EQUIPE, NUNCA DEVE APARECER
   if (view === "onboarding") {
+    if (isCheckingTeam) {
+      return (
+        <div className="min-h-screen bg-[#f7f9ff] flex items-center justify-center font-['Inter',sans-serif]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-[#00356a] border-t-transparent rounded-full animate-spin" />
+            <p className="font-['Space_Grotesk'] text-xs font-bold uppercase tracking-wider text-[#00356a]">
+              Carregando dados da sua equipe...
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (user?.teamId || user?.teamName || (team.id && team.id !== "tm-sumo-01")) {
+      setView("portal");
+      return null;
+    }
+
     return (
       <>
         <AlunoOnboarding
@@ -281,16 +367,6 @@ export default function AlunoPortal({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             {team.status || "EQUIPE HOMOLOGADA"}
           </span>
-
-          {/* Trocar/Cadastrar Nova Equipe */}
-          <button
-            onClick={() => setView("onboarding")}
-            className="flex items-center gap-1 text-[11px] font-bold text-[#00356a] hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border border-[#c2d9f5] transition-colors cursor-pointer font-['Space_Grotesk'] uppercase tracking-wider"
-            title="Trocar de equipe ou cadastrar nova equipe"
-          >
-            <span>🔄</span>
-            <span className="hidden sm:inline">Trocar Equipe</span>
-          </button>
 
           {/* User Profile & Logoff */}
           <div className="flex items-center gap-3 pl-3 border-l border-[#e2e8f0]">
@@ -367,7 +443,6 @@ export default function AlunoPortal({
           {[
             { key: "equipe", label: "Meu Robô & Equipe", icon: "🛡️" },
             { key: "partidas", label: "Minhas Lutas na Arena", icon: "⚔️" },
-            { key: "credencial", label: "Credencial & Certificado", icon: "🪪" },
             { key: "regras", label: "Regulamento 2026", icon: "📜" },
           ].map((tab) => {
             const isActive = activeTab === tab.key;
@@ -415,25 +490,11 @@ export default function AlunoPortal({
                   <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0]">
                     <span className="text-[11px] font-mono text-[#64748b] uppercase tracking-wider">PESO HOMOLOGADO</span>
                     <div className="text-[18px] font-bold text-[#051d30] font-mono mt-0.5">{team.robotWeight}</div>
-                    <span className="text-[11px] text-emerald-600 font-medium">✓ Dentro do limite oficial (3.000 kg)</span>
                   </div>
 
                   <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0]">
                     <span className="text-[11px] font-mono text-[#64748b] uppercase tracking-wider">DIMENSÕES DE COMBATE</span>
                     <div className="text-[18px] font-bold text-[#051d30] font-mono mt-0.5">{team.robotDimensions}</div>
-                    <span className="text-[11px] text-emerald-600 font-medium">✓ Encaixe verificado no cubo de teste</span>
-                  </div>
-
-                  <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0]">
-                    <span className="text-[11px] font-mono text-[#64748b] uppercase tracking-wider">LÂMINA FRONTAL</span>
-                    <div className="text-[15px] font-bold text-[#051d30] mt-0.5">{team.bladeType}</div>
-                    <span className="text-[11px] text-[#64748b]">Bisel duplo com fixação de neodímio</span>
-                  </div>
-
-                  <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0]">
-                    <span className="text-[11px] font-mono text-[#64748b] uppercase tracking-wider">SISTEMA DE PARTIDA</span>
-                    <div className="text-[15px] font-bold text-[#051d30] mt-0.5">Módulo Infravermelho Oficial</div>
-                    <span className="text-[11px] text-[#64748b]">Atraso obrigatório de 5s programado</span>
                   </div>
                 </div>
 
@@ -482,38 +543,42 @@ export default function AlunoPortal({
               </div>
             </div>
 
-            {/* Coluna 3: Box de Suporte & Avisos */}
+            {/* Coluna 3: Código de Acesso do Capitão & Integridade da Equipe */}
             <div className="flex flex-col gap-6">
-              <div className="bg-white rounded-[12px] border border-[#e2e8f0] p-6 shadow-xs">
-                <h3 className="font-['Space_Grotesk'] font-bold text-[16px] text-[#051d30] mb-3">
-                  Localização nos Boxes
-                </h3>
-                <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0] flex flex-col gap-2">
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span className="text-[#64748b]">Bancada / Box:</span>
-                    <strong className="text-[#00356a]">BOX 04 (Área Alpha)</strong>
+              <div className="bg-white rounded-[12px] border border-[#c2d9f5] p-6 shadow-xs relative overflow-hidden">
+                <div className="flex items-center justify-between pb-3 border-b border-[#f1f5f9]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🔑</span>
+                    <h3 className="font-['Space_Grotesk'] font-bold text-[16px] text-[#00356a]">
+                      Código do Capitão
+                    </h3>
                   </div>
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span className="text-[#64748b]">Arena Oficial:</span>
-                    <strong className="text-[#051d30]">Dohyo Principal</strong>
-                  </div>
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span className="text-[#64748b]">Alimentação de Pits:</span>
-                    <span className="font-mono text-[12px] text-emerald-600 font-bold">110V / 220V Ativo</span>
-                  </div>
+                  <span className="bg-[#edf4ff] text-[#00356a] text-[10px] font-mono font-bold px-2.5 py-0.5 rounded border border-[#c2d9f5] uppercase tracking-wider">
+                    Código Oficial
+                  </span>
                 </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-[#051d30] to-[#0a3a60] rounded-[12px] p-6 text-white shadow-md">
-                <span className="text-[10px] font-mono font-bold tracking-[2px] text-[#00f2ff] uppercase">
-                  LEMBRETE DE SEGURANÇA
-                </span>
-                <h4 className="font-['Space_Grotesk'] font-bold text-[18px] mt-1">
-                  EPIs nos Boxes
-                </h4>
-                <p className="text-[13px] text-slate-300 mt-2 leading-relaxed">
-                  O uso de óculos de proteção é obrigatório ao ligar motores de alta rotação ou testar lâminas cortantes na área de manutenção.
+                <p className="text-[12px] text-[#64748b] leading-relaxed mt-3 mb-4">
+                  Compartilhe este código <strong>exclusivamente</strong> com os alunos autorizados a ingressar na sua equipe.
                 </p>
+                <div className="bg-[#f8fafc] border border-[#c2d9f5] rounded-[8px] p-3.5 flex items-center justify-between gap-3">
+                  <span className="font-mono font-black text-[18px] text-[#00356a] tracking-wider select-all">
+                    {team.captainCode || team.code || "CAP-CYBE-3429"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(team.captainCode || team.code || "CAP-CYBE-3429");
+                      setCopiedCaptainCode(true);
+                      setTimeout(() => setCopiedCaptainCode(false), 2500);
+                    }}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#00356a] hover:bg-[#00468a] text-white font-['Space_Grotesk'] font-bold text-[11px] uppercase tracking-wider transition-all cursor-pointer shrink-0"
+                  >
+                    {copiedCaptainCode ? "✓ Copiado!" : "Copiar"}
+                  </button>
+                </div>
+                <div className="mt-4 flex items-start gap-2 text-[11px] text-[#8c4f00] bg-[#fffbeb] p-3 rounded-[6px] border border-[#fef3c7] leading-relaxed">
+                  <span className="shrink-0 text-sm">🔒</span>
+                  <span>A vinculação à equipe é <strong>definitiva</strong>. Não é permitida a troca ou saída após a confirmação.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -614,84 +679,6 @@ export default function AlunoPortal({
           </div>
         )}
 
-        {/* ABA 3: CREDENCIAL & CERTIFICADO */}
-        {activeTab === "credencial" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* Crachá Digital */}
-            <div className="bg-white rounded-[16px] border border-[#e2e8f0] p-6 shadow-sm flex flex-col items-center text-center">
-              <div className="w-full bg-[#00356a] text-white py-3 rounded-[8px] font-['Space_Grotesk'] font-bold text-[13px] tracking-widest uppercase mb-6">
-                CREDENCIAL OFICIAL DO COMPETIDOR
-              </div>
-
-              {/* Avatar Photo */}
-              <div className="w-24 h-24 rounded-full bg-[#00356a] text-white font-bold text-[32px] flex items-center justify-center border-4 border-white shadow-lg">
-                {(user?.name || "A").charAt(0)}
-              </div>
-
-              <h3 className="font-['Space_Grotesk'] font-bold text-[22px] text-[#051d30] mt-4">
-                {user?.name || "Aluno Competidor"}
-              </h3>
-              <p className="text-[#64748b] text-[13px]">{user?.email || "aluno@senac.edu.br"}</p>
-
-              <div className="mt-4 px-4 py-1.5 rounded-full bg-[#eff6ff] text-[#1e40af] font-mono text-[12px] font-bold uppercase tracking-wider border border-[#bfdbfe]">
-                EQUIPE: {team.name}
-              </div>
-
-              {/* QR Code Simulado */}
-              <div className="mt-6 p-4 bg-white border border-[#cbd5e1] rounded-[8px] flex flex-col items-center">
-                <div className="w-36 h-36 bg-[#051d30] rounded-[6px] flex items-center justify-center text-white text-xs font-mono p-2">
-                  <div className="border-2 border-white/60 p-2 w-full h-full flex flex-col items-center justify-center gap-1">
-                    <span className="text-[9px] font-bold">ACESSO BOXES</span>
-                    <span className="text-[8px] text-slate-300">#ROBO-SUMO-2026</span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono text-[#94a3b8] mt-2">Válido para entrada nos boxes e pesagem</span>
-              </div>
-
-              <button
-                onClick={() => window.print()}
-                className="mt-6 w-full py-2.5 rounded-[6px] border border-[#00356a] text-[#00356a] hover:bg-[#eff6ff] font-['Space_Grotesk'] font-bold text-[12px] tracking-wider uppercase transition-colors cursor-pointer"
-              >
-                Imprimir Credencial 🖨️
-              </button>
-            </div>
-
-            {/* Certificado de Participação */}
-            <div className="bg-white rounded-[16px] border border-[#e2e8f0] p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-mono font-bold text-[#b45309] uppercase tracking-wider">
-                  DOCUMENTO OFICIAL
-                </span>
-                <h3 className="font-['Space_Grotesk'] font-bold text-[22px] text-[#051d30] mt-1">
-                  Certificado de Participação
-                </h3>
-                <p className="text-[#64748b] text-[13px] mt-2 leading-relaxed">
-                  Certificado com validação criptográfica emitido pelo Comitê de Engenharia do SENAC para comprovação de horas e atividades complementares.
-                </p>
-
-                <div className="mt-6 p-6 border-2 border-dashed border-[#cbd5e1] rounded-[12px] bg-[#f8fafc] text-center">
-                  <span className="text-3xl block mb-2">📜</span>
-                  <div className="font-['Space_Grotesk'] font-bold text-[15px] text-[#051d30]">
-                    Torneio Senac Robotics 2026
-                  </div>
-                  <div className="text-[12px] text-[#64748b] mt-1">
-                    Carga Horária: <strong>40 horas técnicas</strong>
-                  </div>
-                  <div className="text-[11px] font-mono text-emerald-600 font-bold mt-2">
-                    STATUS: DISPONÍVEL PARA DOWNLOAD
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => alert("Download do certificado iniciado (PDF assinado digitalmente).")}
-                className="mt-6 w-full py-3 rounded-[6px] bg-[#00356a] hover:bg-[#00468a] text-white font-['Space_Grotesk'] font-bold text-[12px] tracking-wider uppercase transition-all shadow-md cursor-pointer"
-              >
-                Baixar Certificado em PDF (PDF/A) 📥
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ABA 4: REGULAMENTO & REGRAS */}
         {activeTab === "regras" && (
