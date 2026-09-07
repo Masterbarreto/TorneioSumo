@@ -586,7 +586,7 @@ export default function CertificatesPage({
       <AdminSidebar active="certificados" onNavigate={onNavigate} onLogout={onLogout} />
 
       {/* Top bar */}
-      <header className="fixed top-0 left-[256px] right-0 h-[64px] bg-[rgba(255,255,255,0.7)] backdrop-blur-[12px] border-b border-[rgba(226,232,240,0.15)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-20 flex items-center justify-between px-8">
+      <header className="fixed top-0 left-0 md:left-[256px] right-0 min-h-[64px] bg-[rgba(255,255,255,0.7)] backdrop-blur-[12px] border-b border-[rgba(226,232,240,0.15)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-20 flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 flex-wrap gap-2 py-2">
         <div>
           <p className="font-['Inter:Regular',Inter,sans-serif] text-[11px] text-[#8c9ab0] tracking-[0.5px] uppercase">DOCUMENTOS / EMISSÃO EM LOTE</p>
           <h1 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[18px] tracking-[-0.5px]">Credenciais e Certificados</h1>
@@ -620,7 +620,7 @@ export default function CertificatesPage({
       </header>
 
       {/* Main 3-column layout */}
-      <main className="absolute top-[64px] left-[256px] right-0 bottom-0 overflow-y-auto p-6 flex gap-5">
+      <main className="absolute top-[64px] left-0 md:left-[256px] right-0 bottom-0 overflow-y-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-5">
 
         {/* ── Left panel: Seleção ── */}
         <div className="flex flex-col gap-4 w-[240px] shrink-0">

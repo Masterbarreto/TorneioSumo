@@ -753,7 +753,7 @@ function TeamList({
   });
 
   return (
-    <div className="flex-1 overflow-y-auto" style={{ paddingLeft: 40, paddingRight: 40, paddingTop: 28, paddingBottom: 40 }}>
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -974,11 +974,11 @@ export default function TeamsPage({
     : null;
 
   return (
-    <div className="fixed inset-0 z-[800] flex overflow-hidden" style={{ background: "#f7f9ff" }}>
+    <div className="fixed inset-0 z-[800] flex overflow-hidden bg-[#f7f9ff]">
       <AdminSidebar active="times" onNavigate={navigate} onLogout={onLogout} />
-      <div className="flex flex-col flex-1 overflow-hidden" style={{ marginLeft: 256 }}>
+      <div className="flex flex-col flex-1 overflow-hidden ml-0 md:ml-[256px]">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-10 shrink-0" style={{ height: 64, borderBottom: "1px solid rgba(194,198,210,0.3)", background: "#f7f9ff" }}>
+        <div className="flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 shrink-0 flex-wrap gap-2" style={{ minHeight: 64, borderBottom: "1px solid rgba(194,198,210,0.3)", background: "#f7f9ff" }}>
           <span className="font-bold text-[14px] text-[#051d30] tracking-[1.5px] uppercase">
             {view.type === "list" ? "Times" : view.type === "team" ? activeTeam?.fullName : activeMember?.name}
           </span>

@@ -16,7 +16,16 @@ export default function PartidasPage({
   const [matches, setMatches] = useState<BracketMatch[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activePhase, setActivePhase] = useState<"ALL" | "OITAVAS" | "QUARTAS" | "SEMIFINAL" | "FINAL">("ALL");
-  const [matchTimer, setMatchTimer] = useState<number>(180);
+  const [matchTimer, setMatchTimer] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem("sumo_timer_sync");
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (typeof parsed.timer === "number") return parsed.timer;
+      }
+    } catch {}
+    return 120;
+  });
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
   const [toast, setToast] = useState<string>("");
 
@@ -94,9 +103,12 @@ export default function PartidasPage({
 
     ch.onmessage = (e: MessageEvent) => {
       if (e.data) {
-        fetchMatchesFromApi();
-        if (e.data.timer !== undefined) {
-          setMatchTimer(e.data.timer);
+        if (e.data.refresh || e.data.matches) {
+          fetchMatchesFromApi();
+        }
+        if (e.data.type === "TIMER_SYNC" || e.data.timer !== undefined) {
+          if (e.data.timer !== undefined) setMatchTimer(e.data.timer);
+          if (e.data.isRunning !== undefined) setTimerRunning(e.data.isRunning);
         }
       }
     };
@@ -104,6 +116,13 @@ export default function PartidasPage({
     const handleStorage = (e: StorageEvent) => {
       if (e.key === "sumo_projection_state") {
         fetchMatchesFromApi();
+      }
+      if (e.key === "sumo_timer_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.timer !== undefined) setMatchTimer(parsed.timer);
+          if (parsed.isRunning !== undefined) setTimerRunning(parsed.isRunning);
+        } catch {}
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -116,10 +135,10 @@ export default function PartidasPage({
   }, []);
 
   // 3. Broadcast helper for real-time projection
-  const broadcastSync = (updatedList = matches, newTimer = matchTimer) => {
+  const broadcastSync = (updatedList = matches, newTimer = matchTimer, running = timerRunning) => {
     const state: SumoTournamentState = {
       category: "Sumô",
-      status: "EM ANDAMENTO",
+      status: running ? "EM ANDAMENTO" : "PAUSADO",
       timer: newTimer,
       matches: updatedList,
       finalist1: updatedList.find((m) => m.phase === "FINAL")?.team1.name || "TBD",
@@ -127,7 +146,14 @@ export default function PartidasPage({
     };
     try {
       localStorage.setItem("sumo_projection_state", JSON.stringify(state));
-      projChannel.current?.postMessage({ sumoState: state, matches: updatedList, timer: newTimer });
+      localStorage.setItem("sumo_timer_sync", JSON.stringify({ timer: newTimer, isRunning: running, timestamp: Date.now() }));
+      projChannel.current?.postMessage({
+        type: "TIMER_SYNC",
+        sumoState: state,
+        matches: updatedList,
+        timer: newTimer,
+        isRunning: running,
+      });
     } catch (e) {}
   };
 
@@ -138,10 +164,13 @@ export default function PartidasPage({
       id = setInterval(() => {
         setMatchTimer((t) => {
           const next = Math.max(0, t - 1);
-          broadcastSync(matches, next);
+          broadcastSync(matches, next, true);
           return next;
         });
       }, 1000);
+    } else if (matchTimer === 0 && timerRunning) {
+      setTimerRunning(false);
+      broadcastSync(matches, 0, false);
     }
     return () => clearInterval(id);
   }, [timerRunning, matchTimer, matches]);
@@ -248,19 +277,19 @@ export default function PartidasPage({
       <AdminSidebar active="partidas" onNavigate={onNavigate} onLogout={onLogout} />
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-[256px] flex flex-col min-h-screen">
+      <div className="flex-1 pl-0 md:pl-[256px] flex flex-col min-h-screen">
         {/* Top Header Bar */}
-        <header className="h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-8 shrink-0">
+        <header className="min-h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 py-2 shrink-0 flex-wrap gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[2px] uppercase text-[#8c4f00]">
+            <p className="text-[10px] sm:text-[11px] font-bold tracking-[2px] uppercase text-[#8c4f00]">
               TORNEIO DE SUMÔ 3KG • CHAVE DE CONFRONTOS EM CASCATA
             </p>
-            <h1 className="font-['Space_Grotesk'] font-bold text-[18px] text-[#051d30] leading-tight">
+            <h1 className="font-['Space_Grotesk'] font-bold text-[16px] sm:text-[18px] text-[#051d30] leading-tight">
               Gerenciamento Oficial de Partidas & Transmissão
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {/* MongoDB Atlas badge */}
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -270,7 +299,7 @@ export default function PartidasPage({
             {/* Open Telão Button */}
             <button
               onClick={openProjectionWindow}
-              className="flex items-center gap-2 bg-[#00356a] hover:bg-[#00468a] text-white font-['Space_Grotesk'] font-bold text-[12px] tracking-[1px] uppercase px-5 py-2.5 rounded-[6px] transition-all shadow-md cursor-pointer"
+              className="flex items-center gap-2 bg-[#00356a] hover:bg-[#00468a] text-white font-['Space_Grotesk'] font-bold text-[12px] tracking-[1px] uppercase px-4 sm:px-5 py-2.5 rounded-[6px] transition-all shadow-md cursor-pointer"
             >
               <span>📺</span>
               <span>ABRIR TELÃO (?proj=1)</span>
@@ -279,11 +308,11 @@ export default function PartidasPage({
         </header>
 
         {/* Content Body */}
-        <div className="p-8 max-w-7xl w-full mx-auto flex flex-col gap-6">
+        <div className="p-4 sm:p-8 max-w-7xl w-full mx-auto flex flex-col gap-6">
           {/* Controls Bar */}
-          <div className="bg-white rounded-[12px] border border-[#e2e8f0] p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="bg-white rounded-[12px] border border-[#e2e8f0] p-4 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             {/* Timer Controller */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="w-12 h-12 rounded-[10px] bg-[#0c2a4d] flex items-center justify-center text-xl text-[#00f2ff]">
                 ⏱
               </div>
@@ -296,9 +325,13 @@ export default function PartidasPage({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex items-center gap-2 sm:ml-4">
                 <button
-                  onClick={() => setTimerRunning(!timerRunning)}
+                  onClick={() => {
+                    const next = !timerRunning;
+                    setTimerRunning(next);
+                    broadcastSync(matches, matchTimer, next);
+                  }}
                   className={`px-4 py-2 rounded-[6px] font-bold text-[12px] tracking-wider uppercase transition-colors cursor-pointer ${
                     timerRunning ? "bg-[#fee2e2] text-[#991b1b]" : "bg-[#ecfdf5] text-[#065f46]"
                   }`}
@@ -307,13 +340,13 @@ export default function PartidasPage({
                 </button>
                 <button
                   onClick={() => {
-                    setMatchTimer(180);
+                    setMatchTimer(120);
                     setTimerRunning(false);
-                    broadcastSync(matches, 180);
+                    broadcastSync(matches, 120, false);
                   }}
                   className="px-3 py-2 rounded-[6px] border border-[#cbd5e1] text-[#64748b] hover:bg-[#f8fafc] text-[12px] font-bold transition-colors cursor-pointer"
                 >
-                  RESETAR (03:00)
+                  RESETAR (02:00)
                 </button>
               </div>
             </div>

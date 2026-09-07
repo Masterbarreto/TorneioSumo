@@ -661,6 +661,26 @@ export default function App() {
     window.history.pushState(null, "", "/");
   };
 
+  if (showAdmin) {
+    return (
+      <div className="min-h-screen w-full bg-[#f7f9ff]">
+        <GlobalStyles />
+        <AdminDashboard onLogout={closeAdmin} />
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  if (showTecnico) {
+    return (
+      <div className="min-h-screen w-full bg-[#f7f9ff]">
+        <GlobalStyles />
+        <DashboardDoTecnico onLogout={closeTecnico} />
+        <ToastContainer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen w-full bg-[#f7f9ff]">
       <GlobalStyles />
@@ -674,12 +694,6 @@ export default function App() {
       <ScrollTop />
       <ToastContainer />
       {showLogin && <LoginPage onBack={closeLogin} onAdminLogin={openAdmin} onStudentLogin={openTecnico} />}
-      {showAdmin && <AdminDashboard onLogout={closeAdmin} />}
-      {showTecnico && (
-        <div className="fixed inset-0 z-[800] overflow-auto bg-[#f7f9ff]">
-          <DashboardDoTecnico onLogout={closeTecnico} />
-        </div>
-      )}
     </div>
   );
 }

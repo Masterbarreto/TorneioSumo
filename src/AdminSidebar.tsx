@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import svgPaths from "@/imports/DashboardDoTecnico-1/svg-n9wrsd9n43";
 
 type NavKey = "home" | "arenas" | "certificados" | "times" | "partidas" | "rules" | "documents";
@@ -40,56 +40,94 @@ export default function AdminSidebar({
   onNavigate: (k: NavKey | "logout") => void;
   onLogout: () => void;
 }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <div
-      className="fixed top-0 left-0 bg-[#edf4ff] flex flex-col justify-between z-[850]"
-      style={{ width: 256, height: "100vh", paddingTop: 80, paddingBottom: 16, paddingLeft: 16, paddingRight: 17, borderRight: "1px solid rgba(194,198,210,0.15)" }}
-    >
-      {/* Logo — matches imported ROBOTIC_SYNC label */}
-      <div className="absolute top-0 left-0 right-0 flex items-center" style={{ height: 64, paddingLeft: 16 }}>
-        <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] tracking-[2px] uppercase">ROBOTIC_SYNC</span>
-      </div>
+    <>
+      {/* Mobile Hamburger Toggle */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="md:hidden fixed top-3 left-4 z-[999] w-10 h-10 rounded-[8px] bg-white border border-[#cbd5e1] text-[#00356a] flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95"
+        aria-label="Abrir Menu"
+      >
+        {mobileOpen ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        )}
+      </button>
 
-      {/* Main nav */}
-      <nav className="flex flex-col gap-[4px] flex-1 overflow-y-auto">
-        {NAV.map(({ key, label, iconPath, viewBox, w, h, customIcon }) => {
-          const isActive = active === key;
-          return (
-            <button
-              key={key}
-              onClick={() => onNavigate(key)}
-              className={`flex items-center w-full px-[16px] py-[12px] rounded-[4px] text-left transition-all duration-150 ${
-                isActive
-                  ? "bg-white drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]"
-                  : "hover:bg-white/50"
-              }`}
-            >
-              {customIcon ? (
-                <span className="shrink-0">{customIcon(isActive)}</span>
-              ) : (
-                <svg width={w} height={h} viewBox={viewBox} fill="none" preserveAspectRatio="none" className="shrink-0">
-                  <path d={iconPath} fill={isActive ? "#1e3a8a" : "#475569"} />
-                </svg>
-              )}
-              <span
-                className="pl-[12px]"
-                style={{
-                  fontFamily: isActive ? "'Inter:Bold', Inter, sans-serif" : "'Inter:Regular', Inter, sans-serif",
-                  fontWeight: isActive ? 700 : 400,
-                  fontSize: 14,
-                  letterSpacing: "0.7px",
-                  textTransform: "uppercase",
-                  color: isActive ? "#1e3a8a" : "#475569",
-                  whiteSpace: "nowrap",
+      {/* Mobile Overlay Backdrop */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden fixed inset-0 z-[840] bg-black/40 backdrop-blur-[2px] transition-opacity"
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <aside
+        className={`fixed top-0 left-0 bg-[#edf4ff] flex flex-col justify-between z-[850] w-[256px] h-screen pt-[80px] pb-4 px-4 border-r border-[rgba(194,198,210,0.15)] transition-transform duration-300 ease-in-out ${
+          mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        {/* Logo */}
+        <div className="absolute top-0 left-0 right-0 flex items-center h-[64px] pl-4">
+          <span className="font-['Space_Grotesk'] font-bold text-[#00356a] text-[20px] tracking-[2px] uppercase select-none">
+            ROBOTIC_SYNC
+          </span>
+        </div>
+
+        {/* Main nav */}
+        <nav className="flex flex-col gap-[4px] flex-1 overflow-y-auto">
+          {NAV.map(({ key, label, iconPath, viewBox, w, h, customIcon }) => {
+            const isActive = active === key;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  onNavigate(key);
+                  setMobileOpen(false);
                 }}
+                className={`flex items-center w-full px-[16px] py-[12px] rounded-[4px] text-left transition-all duration-150 cursor-pointer ${
+                  isActive
+                    ? "bg-white drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]"
+                    : "hover:bg-white/50"
+                }`}
               >
-                {label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-
-    </div>
+                {customIcon ? (
+                  <span className="shrink-0">{customIcon(isActive)}</span>
+                ) : (
+                  <svg width={w} height={h} viewBox={viewBox} fill="none" preserveAspectRatio="none" className="shrink-0">
+                    <path d={iconPath} fill={isActive ? "#1e3a8a" : "#475569"} />
+                  </svg>
+                )}
+                <span
+                  className="pl-[12px]"
+                  style={{
+                    fontFamily: isActive ? "'Inter:Bold', Inter, sans-serif" : "'Inter:Regular', Inter, sans-serif",
+                    fontWeight: isActive ? 700 : 400,
+                    fontSize: 14,
+                    letterSpacing: "0.7px",
+                    textTransform: "uppercase",
+                    color: isActive ? "#1e3a8a" : "#475569",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

@@ -48,7 +48,26 @@ export default function ProjectionReceiver() {
   const [matches, setMatches] = useState<BracketMatch[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeView, setActiveView] = useState<"ALL" | "OITAVAS" | "QUARTAS" | "SEMIFINAL" | "FINAL">("ALL");
-  const [liveTimer, setLiveTimer] = useState<number>(180); // 03:00
+  const [liveTimer, setLiveTimer] = useState<number>(() => {
+    try {
+      const cached = localStorage.getItem("sumo_timer_sync");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.timer === "number") return parsed.timer;
+      }
+    } catch {}
+    return 120; // 02:00 oficial do sumô
+  });
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(() => {
+    try {
+      const cached = localStorage.getItem("sumo_timer_sync");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.isRunning === "boolean") return parsed.isRunning;
+      }
+    } catch {}
+    return false;
+  });
 
   // 1. Fetch Real Matches from MongoDB Atlas API
   const fetchMatchesFromApi = async () => {
@@ -115,7 +134,7 @@ export default function ProjectionReceiver() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3. Listen to BroadcastChannel for instant local trigger
+  // 3. Listen to BroadcastChannel and localStorage for instant real-time synchronization
   useEffect(() => {
     const ch = new BroadcastChannel("robotic_proj");
     ch.onmessage = (e: MessageEvent) => {
@@ -123,8 +142,13 @@ export default function ProjectionReceiver() {
         if (e.data.matches && Array.isArray(e.data.matches)) {
           fetchMatchesFromApi();
         }
-        if (e.data.timer !== undefined) {
-          setLiveTimer(e.data.timer);
+        if (e.data.type === "TIMER_SYNC" || e.data.timer !== undefined) {
+          if (typeof e.data.timer === "number") {
+            setLiveTimer(e.data.timer);
+          }
+          if (typeof e.data.isRunning === "boolean") {
+            setIsTimerRunning(e.data.isRunning);
+          }
         }
       }
     };
@@ -132,6 +156,13 @@ export default function ProjectionReceiver() {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === "sumo_projection_state") {
         fetchMatchesFromApi();
+      }
+      if (e.key === "sumo_timer_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (typeof parsed.timer === "number") setLiveTimer(parsed.timer);
+          if (typeof parsed.isRunning === "boolean") setIsTimerRunning(parsed.isRunning);
+        } catch {}
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -142,13 +173,20 @@ export default function ProjectionReceiver() {
     };
   }, []);
 
-  // 4. Timer interval countdown
+  // 4. Timer interval countdown ONLY when match timer is running
   useEffect(() => {
-    const id = setInterval(() => {
-      setLiveTimer((t) => (t > 0 ? t - 1 : 180));
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+    let id: any = null;
+    if (isTimerRunning && liveTimer > 0) {
+      id = setInterval(() => {
+        setLiveTimer((t) => Math.max(0, t - 1));
+      }, 1000);
+    } else if (liveTimer === 0 && isTimerRunning) {
+      setIsTimerRunning(false);
+    }
+    return () => {
+      if (id) clearInterval(id);
+    };
+  }, [isTimerRunning, liveTimer]);
 
   // Matches grouped by phase
   const oitavas = matches.filter((m) => m.phase === "OITAVAS");

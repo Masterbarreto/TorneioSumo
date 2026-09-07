@@ -73,7 +73,7 @@ const TEAM_COLORS: Record<TeamStatus, string> = {
 // ─── TopBar ─────────────────────────────────────────────────────────────────
 function TopBar({ title, breadcrumb, children }: { title: string; breadcrumb?: string[]; children?: React.ReactNode }) {
   return (
-    <header className="fixed top-0 left-[256px] right-0 h-[64px] bg-white border-b border-[rgba(194,198,210,0.4)] z-20 flex items-center justify-between px-8">
+    <header className="fixed top-0 left-0 md:left-[256px] right-0 min-h-[64px] bg-white border-b border-[rgba(194,198,210,0.4)] z-20 flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 flex-wrap gap-2 py-2">
       <div className="flex flex-col">
         {breadcrumb && (
           <div className="flex items-center gap-1 text-[11px] font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] tracking-[0.5px] uppercase mb-0.5">
@@ -798,7 +798,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
       </TopBar>
 
       {/* Main content */}
-      <main className="absolute top-[64px] left-[256px] right-0 bottom-0 overflow-y-auto p-8">
+      <main className="absolute top-[64px] left-0 md:left-[256px] right-0 bottom-0 overflow-y-auto p-4 sm:p-8">
         {/* List view */}
         {view === "list" && (
           <div className="flex flex-col gap-8 max-w-[1100px]">

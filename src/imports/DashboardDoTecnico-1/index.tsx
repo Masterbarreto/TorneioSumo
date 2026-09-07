@@ -434,7 +434,13 @@ function Container17() {
   );
 }
 
-function TopNavigationBar() {
+function TopNavigationBar({
+  championshipStarted,
+  onToggleChampionship,
+}: {
+  championshipStarted?: boolean;
+  onToggleChampionship?: () => void;
+}) {
   const [userName, setUserName] = useState("Administrador");
   const [userRole, setUserRole] = useState("ADMIN");
 
@@ -447,17 +453,36 @@ function TopNavigationBar() {
   }, []);
 
   return (
-    <div className="absolute backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] content-stretch flex h-[64px] items-center justify-between left-0 pb-px px-[32px] top-0 w-full z-10" data-name="Top Navigation Bar">
-      <div aria-hidden className="absolute border-[rgba(226,232,240,0.15)] border-b border-solid inset-0 pointer-events-none shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]" />
+    <div className="absolute backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] flex h-[64px] items-center justify-between left-0 pl-16 pr-6 md:px-8 top-0 w-full z-10 border-b border-[rgba(226,232,240,0.4)] shadow-xs" data-name="Top Navigation Bar">
       <Container15 />
-      <div className="flex items-center gap-4 relative z-10">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#edf4ff] border border-[rgba(194,198,210,0.2)]">
+      <div className="flex items-center gap-3 relative z-10 flex-wrap">
+        {/* Championship Status Button */}
+        {championshipStarted ? (
+          <div className="flex items-center gap-2 rounded-full px-3 py-1.5 shadow-xs" style={{ background: "#d1fae5", border: "1px solid #6ee7b7" }}>
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-green-700 uppercase tracking-[0.5px]">Campeonato Ativo</span>
+          </div>
+        ) : (
+          <button
+            onClick={onToggleChampionship}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full shadow-xs font-bold text-[11px] text-black hover:opacity-90 transition-all cursor-pointer"
+            style={{ background: "#f59e0b" }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span>Iniciar Campeonato</span>
+          </button>
+        )}
+
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#edf4ff] border border-[rgba(194,198,210,0.2)]">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-[12px] font-bold text-[#00356a] uppercase tracking-[0.5px]">API Conectada</span>
+          <span className="text-[11px] font-bold text-[#00356a] uppercase tracking-[0.5px]">API Conectada</span>
         </div>
+
         <div className="flex flex-col items-end">
-          <span className="font-['Space_Grotesk:Bold',sans-serif] font-bold text-[13px] text-[#051d30]">{userName}</span>
-          <span className="font-['Inter:Regular',sans-serif] text-[11px] text-[#727782] tracking-wider uppercase">{userRole}</span>
+          <span className="font-['Space_Grotesk'] font-bold text-[13px] text-[#051d30] leading-tight">{userName}</span>
+          <span className="font-['Inter',sans-serif] text-[10px] text-[#727782] tracking-wider uppercase">{userRole}</span>
         </div>
       </div>
     </div>
@@ -466,17 +491,47 @@ function TopNavigationBar() {
 
 function TechnicalRobotBlueprint() {
   return (
-    <div className="flex-[1_0_0] min-h-px relative w-full" data-name="Technical Robot Blueprint">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <img alt="" className="absolute left-0 max-w-none size-full top-0" src={imgTechnicalRobotBlueprint} />
-      </div>
+    <div className="relative w-full h-full flex items-center justify-end overflow-hidden pointer-events-none pr-4 sm:pr-8">
+      <svg
+        className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[380px] md:h-[380px] text-[#00f2ff] opacity-25"
+        viewBox="0 0 200 200"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Concentric Dohyo circles */}
+        <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
+        <circle cx="100" cy="100" r="72" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="100" cy="100" r="45" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" />
+        <circle cx="100" cy="100" r="18" stroke="currentColor" strokeWidth="1" />
+
+        {/* Crosshair coordinate axes */}
+        <line x1="10" y1="100" x2="190" y2="100" stroke="currentColor" strokeWidth="0.75" />
+        <line x1="100" y1="10" x2="100" y2="190" stroke="currentColor" strokeWidth="0.75" />
+
+        {/* Robot Chassis Blueprint Lines */}
+        <rect x="75" y="70" width="50" height="60" rx="4" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="68" y="76" width="6" height="20" rx="2" stroke="currentColor" strokeWidth="1" />
+        <rect x="126" y="76" width="6" height="20" rx="2" stroke="currentColor" strokeWidth="1" />
+        <rect x="68" y="104" width="6" height="20" rx="2" stroke="currentColor" strokeWidth="1" />
+        <rect x="126" y="104" width="6" height="20" rx="2" stroke="currentColor" strokeWidth="1" />
+
+        {/* Sumo Blade Wedge */}
+        <polygon points="75,70 125,70 135,55 65,55" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.1" />
+
+        {/* Telemetry target markers */}
+        <circle cx="100" cy="100" r="4" fill="currentColor" />
+        <path d="M40 40 L50 40 L50 50" stroke="currentColor" strokeWidth="1" />
+        <path d="M160 40 L150 40 L150 50" stroke="currentColor" strokeWidth="1" />
+        <path d="M40 160 L50 160 L50 150" stroke="currentColor" strokeWidth="1" />
+        <path d="M160 160 L150 160 L150 150" stroke="currentColor" strokeWidth="1" />
+      </svg>
     </div>
   );
 }
 
 function Container18() {
   return (
-    <div className="absolute bottom-0 content-stretch flex flex-col items-start justify-center left-1/2 opacity-20 right-0 top-0" data-name="Container">
+    <div className="absolute inset-y-0 right-0 w-full md:w-1/2 pointer-events-none" data-name="Container">
       <TechnicalRobotBlueprint />
     </div>
   );
@@ -484,35 +539,32 @@ function Container18() {
 
 function Heading() {
   return (
-    <div className="content-stretch flex flex-col items-start max-w-[448px] relative shrink-0 w-[448px]" data-name="Heading 2">
-      <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[36px] text-white whitespace-nowrap">
-        <p className="leading-[40px] mb-0">Bem-vindo ao Coração da</p>
-        <p className="leading-[40px]">Inovação Técnica.</p>
-      </div>
+    <div className="w-full max-w-xl" data-name="Heading 2">
+      <h2 className="font-['Space_Grotesk'] font-bold text-white text-[24px] sm:text-[30px] md:text-[36px] leading-tight">
+        Bem-vindo ao Coração da Inovação Técnica.
+      </h2>
     </div>
   );
 }
 
 function Container20() {
   return (
-    <div className="content-stretch flex flex-col items-start max-w-[384px] pt-[7.5px] relative shrink-0 w-[384px]" data-name="Container">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Light',sans-serif] font-light justify-center leading-[0] not-italic relative shrink-0 text-[#96bdff] text-[16px] whitespace-nowrap">
-        <p className="leading-[24px] mb-0">Monitore o desempenho das equipes e a</p>
-        <p className="leading-[24px] mb-0">integridade das arenas em tempo real com</p>
-        <p className="leading-[24px]">precisão absoluta.</p>
-      </div>
+    <div className="w-full max-w-lg pt-1" data-name="Container">
+      <p className="font-['Inter'] font-light text-[#96bdff] text-[13px] sm:text-[15px] leading-relaxed">
+        Monitore o desempenho das equipes e a integridade das arenas em tempo real com precisão absoluta.
+      </p>
     </div>
   );
 }
 
 function Container19({ torneioAtivo }: { torneioAtivo?: any }) {
   return (
-    <div className="content-stretch flex flex-col gap-[8.5px] h-[216px] items-start relative shrink-0 w-full" data-name="Container">
-      <div className="[word-break:break-word] flex items-center gap-2 font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#96bdff] text-[12px] tracking-[1.2px] uppercase whitespace-nowrap">
+    <div className="flex flex-col gap-2 w-full z-10" data-name="Container">
+      <div className="flex items-center gap-2 font-['Inter'] font-bold text-[#96bdff] text-[11px] sm:text-[12px] tracking-[1.2px] uppercase">
         <span className="w-2 h-2 rounded-full bg-[#00f2ff] animate-pulse" />
-        <p className="leading-[16px]">
+        <span>
           {torneioAtivo ? `${torneioAtivo.nome} • STATUS: ${torneioAtivo.status}` : "SENAC ROBOTICS • CENTRAL COMMAND"}
-        </p>
+        </span>
       </div>
       <Heading />
       <Container20 />
@@ -550,7 +602,7 @@ function Button3({ onNavigate }: { onNavigate?: (key: string) => void }) {
 
 function Container21({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="content-stretch flex gap-[16px] items-start relative shrink-0 w-full" data-name="Container">
+    <div className="flex flex-wrap gap-3 items-center relative shrink-0 w-full z-10" data-name="Container">
       <Button2 onNavigate={onNavigate} />
       <Button3 onNavigate={onNavigate} />
     </div>
@@ -559,7 +611,7 @@ function Container21({ onNavigate }: { onNavigate?: (key: string) => void }) {
 
 function Margin5({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="content-stretch flex flex-col items-start pt-[24px] relative shrink-0 w-full" data-name="Margin">
+    <div className="flex flex-col items-start pt-6 relative shrink-0 w-full z-10" data-name="Margin">
       <Container21 onNavigate={onNavigate} />
     </div>
   );
@@ -567,21 +619,21 @@ function Margin5({ onNavigate }: { onNavigate?: (key: string) => void }) {
 
 function Background({ torneioAtivo, onNavigate }: { torneioAtivo?: any; onNavigate?: (key: string) => void }) {
   return (
-    <div className="col-[1/span_3] justify-self-stretch min-h-[280px] relative rounded-[12px] row-1 self-start shrink-0" style={{ backgroundImage: "linear-gradient(167.21226664994956deg, rgb(0, 53, 106) 0%, rgb(0, 75, 147) 100%)" }} data-name="Background">
-      <div className="min-h-[inherit] overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex flex-col items-start justify-between min-h-[inherit] p-[32px] relative size-full">
-          <Container18 />
-          <Container19 torneioAtivo={torneioAtivo} />
-          <Margin5 onNavigate={onNavigate} />
-        </div>
-      </div>
+    <div
+      className="w-full relative rounded-[16px] overflow-hidden shadow-lg p-6 sm:p-8 flex flex-col justify-between min-h-[260px]"
+      style={{ backgroundImage: "linear-gradient(167deg, rgb(0, 53, 106) 0%, rgb(0, 75, 147) 100%)" }}
+      data-name="Background"
+    >
+      <Container18 />
+      <Container19 torneioAtivo={torneioAtivo} />
+      <Margin5 onNavigate={onNavigate} />
     </div>
   );
 }
 
 function HeroBentoHeader({ torneioAtivo, onNavigate }: { torneioAtivo?: any; onNavigate?: (key: string) => void }) {
   return (
-    <div className="gap-x-[24px] gap-y-[24px] grid grid-cols-[repeat(3,minmax(0,1fr))] grid-rows-[_316px] relative shrink-0 w-full" data-name="Hero Bento Header">
+    <div className="w-full relative shrink-0" data-name="Hero Bento Header">
       <Background torneioAtivo={torneioAtivo} onNavigate={onNavigate} />
     </div>
   );
@@ -638,7 +690,7 @@ function Container23({ count }: { count?: number }) {
 
 function Background1({ count }: { count?: number }) {
   return (
-    <div className="bg-[#edf4ff] col-1 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
+    <div className="bg-[#edf4ff] h-[104px] w-full relative rounded-[12px] shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow />
@@ -700,7 +752,7 @@ function Container26({ count }: { count?: number }) {
 
 function Background2({ count }: { count?: number }) {
   return (
-    <div className="bg-[#edf4ff] col-2 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
+    <div className="bg-[#edf4ff] h-[104px] w-full relative rounded-[12px] shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow1 />
@@ -762,7 +814,7 @@ function Container29({ count }: { count?: number }) {
 
 function Background3({ count }: { count?: number }) {
   return (
-    <div className="bg-[#edf4ff] col-3 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
+    <div className="bg-[#edf4ff] h-[104px] w-full relative rounded-[12px] shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow2 />
@@ -775,10 +827,16 @@ function Background3({ count }: { count?: number }) {
 
 function RealTimeStatsRow({ totalEquipes, arenasAtivas, validacoesPendentes }: { totalEquipes?: number; arenasAtivas?: number; validacoesPendentes?: number }) {
   return (
-    <div className="gap-x-[24px] gap-y-[24px] grid grid-cols-[repeat(3,minmax(0,1fr))] grid-rows-[_104px] h-[104px] py-[7px] relative shrink-0 w-full" data-name="Real-Time Stats Row">
-      <Background1 count={totalEquipes} />
-      <Background2 count={arenasAtivas} />
-      <Background3 count={validacoesPendentes} />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full" data-name="Real-Time Stats Row">
+      <div className="w-full">
+        <Background1 count={totalEquipes} />
+      </div>
+      <div className="w-full">
+        <Background2 count={arenasAtivas} />
+      </div>
+      <div className="w-full sm:col-span-2 lg:col-span-1">
+        <Background3 count={validacoesPendentes} />
+      </div>
     </div>
   );
 }
@@ -1096,7 +1154,7 @@ function Container42({ onNavigate }: { onNavigate?: (key: string) => void }) {
 
 function TechnicalShortcutsGlassmorphism({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="col-[4/span_2] content-stretch flex flex-col gap-[24px] items-start justify-self-stretch relative row-1 self-start shrink-0" data-name="Technical Shortcuts (Glassmorphism)">
+    <div className="w-full flex flex-col gap-[24px] items-start relative shrink-0" data-name="Technical Shortcuts (Glassmorphism)">
       <Heading5 />
       <Container42 onNavigate={onNavigate} />
     </div>
@@ -1105,9 +1163,13 @@ function TechnicalShortcutsGlassmorphism({ onNavigate }: { onNavigate?: (key: st
 
 function ActivityShortcutsAsymmetricSection({ atividades, onNavigate }: { atividades?: any[]; onNavigate?: (key: string) => void }) {
   return (
-    <div className="gap-x-[32px] gap-y-[32px] grid grid-cols-[repeat(5,minmax(0,1fr))] relative shrink-0 w-full" data-name="Activity & Shortcuts Asymmetric Section">
-      <ActivityFeedEditorialStyle atividades={atividades} onNavigate={onNavigate} />
-      <TechnicalShortcutsGlassmorphism onNavigate={onNavigate} />
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full" data-name="Activity & Shortcuts Asymmetric Section">
+      <div className="lg:col-span-3 w-full">
+        <ActivityFeedEditorialStyle atividades={atividades} onNavigate={onNavigate} />
+      </div>
+      <div className="lg:col-span-2 w-full">
+        <TechnicalShortcutsGlassmorphism onNavigate={onNavigate} />
+      </div>
     </div>
   );
 }
@@ -1115,7 +1177,7 @@ function ActivityShortcutsAsymmetricSection({ atividades, onNavigate }: { ativid
 function CanvasContent({ stats, onNavigate }: { stats?: any; onNavigate?: (key: string) => void }) {
   return (
     <div className="min-h-screen relative shrink-0 w-full" data-name="Canvas Content">
-      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[48px] pt-[96px] px-[32px] relative size-full">
+      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[48px] pt-[80px] sm:pt-[96px] px-4 sm:px-8 relative size-full max-w-7xl mx-auto">
         <HeroBentoHeader torneioAtivo={stats?.torneioAtivo} onNavigate={onNavigate} />
         <RealTimeStatsRow 
           totalEquipes={stats?.totalEquipes} 
@@ -1128,7 +1190,17 @@ function CanvasContent({ stats, onNavigate }: { stats?: any; onNavigate?: (key: 
   );
 }
 
-export default function DashboardDoTecnico({ onLogout, onNavigate }: { onLogout?: () => void; onNavigate?: (key: string) => void }) {
+export default function DashboardDoTecnico({
+  onLogout,
+  onNavigate,
+  championshipStarted,
+  onToggleChampionship,
+}: {
+  onLogout?: () => void;
+  onNavigate?: (key: string) => void;
+  championshipStarted?: boolean;
+  onToggleChampionship?: () => void;
+}) {
   const [stats, setStats] = useState<any>({
     totalEquipes: 18,
     arenasAtivas: 3,
@@ -1151,9 +1223,11 @@ export default function DashboardDoTecnico({ onLogout, onNavigate }: { onLogout?
   }, []);
 
   return (
-    <div className="bg-[#f7f9ff] content-stretch flex flex-col items-start pl-[256px] relative min-h-screen w-full" data-name="Dashboard do Técnico">
-      <AsideSideNavigationBarHiddenOnMobile onLogout={onLogout} />
-      <TopNavigationBar />
+    <div className="bg-[#f7f9ff] content-stretch flex flex-col items-start pl-0 md:pl-[256px] relative min-h-screen w-full" data-name="Dashboard do Técnico">
+      <TopNavigationBar
+        championshipStarted={championshipStarted}
+        onToggleChampionship={onToggleChampionship}
+      />
       <CanvasContent stats={stats} onNavigate={onNavigate} />
     </div>
   );

@@ -54,8 +54,26 @@ export default function AvaliacaoTorneio({
   const [loadingTeams, setLoadingTeams] = useState<boolean>(true);
 
   // Step 3 (Evaluation Console) State
-  const [matchTimer, setMatchTimer] = useState<number>(120); // 2:00 in seconds
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [matchTimer, setMatchTimer] = useState<number>(() => {
+    try {
+      const cached = localStorage.getItem("sumo_timer_sync");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.timer === "number") return parsed.timer;
+      }
+    } catch {}
+    return 120; // 2:00 in seconds
+  });
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(() => {
+    try {
+      const cached = localStorage.getItem("sumo_timer_sync");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.isRunning === "boolean") return parsed.isRunning;
+      }
+    } catch {}
+    return false;
+  });
   const [imobilizacaoTimer, setImobilizacaoTimer] = useState<number | null>(null);
   const [isImobilizacaoRunning, setIsImobilizacaoRunning] = useState<boolean>(false);
 
@@ -70,6 +88,25 @@ export default function AvaliacaoTorneio({
   const [judgeObservations, setJudgeObservations] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Broadcast Timer to Telão and Partidas
+  const broadcastTimer = (newTimer: number, running: boolean) => {
+    try {
+      localStorage.setItem(
+        "sumo_timer_sync",
+        JSON.stringify({ timer: newTimer, isRunning: running, timestamp: Date.now() })
+      );
+      const ch = new BroadcastChannel("robotic_proj");
+      ch.postMessage({
+        type: "TIMER_SYNC",
+        timer: newTimer,
+        isRunning: running,
+        matchCode: selectedMatch?.code,
+        round: currentRoundNumber,
+      });
+      setTimeout(() => ch.close(), 100);
+    } catch (e) {}
+  };
 
   // 1. Fetch Real Matches from MongoDB Atlas API
   const fetchMatchesFromApi = async () => {
@@ -138,9 +175,41 @@ export default function AvaliacaoTorneio({
 
   useEffect(() => {
     fetchMatchesFromApi();
+
+    const ch = new BroadcastChannel("robotic_proj");
+    ch.onmessage = (e: MessageEvent) => {
+      if (e.data) {
+        if (e.data.refresh || e.data.matches) {
+          fetchMatchesFromApi();
+        }
+        if (e.data.type === "TIMER_SYNC" || e.data.timer !== undefined) {
+          if (typeof e.data.timer === "number") setMatchTimer(e.data.timer);
+          if (typeof e.data.isRunning === "boolean") setIsTimerRunning(e.data.isRunning);
+        }
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "sumo_projection_state") {
+        fetchMatchesFromApi();
+      }
+      if (e.key === "sumo_timer_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (typeof parsed.timer === "number") setMatchTimer(parsed.timer);
+          if (typeof parsed.isRunning === "boolean") setIsTimerRunning(parsed.isRunning);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      ch.close();
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
-  // Broadcast helper
+  // Broadcast helper for match state
   const broadcastSync = () => {
     try {
       const ch = new BroadcastChannel("robotic_proj");
@@ -149,15 +218,20 @@ export default function AvaliacaoTorneio({
     } catch (e) {}
   };
 
-  // Combat Timer 2:00 interval
+  // Combat Timer 2:00 interval with real-time broadcasting
   useEffect(() => {
     let interval: any = null;
     if (isTimerRunning && matchTimer > 0) {
       interval = setInterval(() => {
-        setMatchTimer((prev) => Math.max(0, prev - 1));
+        setMatchTimer((prev) => {
+          const next = Math.max(0, prev - 1);
+          broadcastTimer(next, true);
+          return next;
+        });
       }, 1000);
     } else if (matchTimer === 0 && isTimerRunning) {
       setIsTimerRunning(false);
+      broadcastTimer(0, false);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -226,6 +300,7 @@ export default function AvaliacaoTorneio({
     }
     setMatchTimer(120);
     setIsTimerRunning(false);
+    broadcastTimer(120, false);
     setImobilizacaoTimer(null);
     setIsImobilizacaoRunning(false);
     setStep(3);
@@ -240,6 +315,7 @@ export default function AvaliacaoTorneio({
     // Para e ZERA o cronômetro para 02:00 (120s) para o Round 2
     setIsTimerRunning(false);
     setMatchTimer(120);
+    broadcastTimer(120, false);
     setCurrentRoundNumber(2);
     setToastMessage(`Round 1 gravado (${formatTimer(elapsed)})! Cronômetro zerado para 02:00 (Round 2).`);
     setTimeout(() => setToastMessage(null), 3000);
@@ -253,6 +329,7 @@ export default function AvaliacaoTorneio({
     // Para e ZERA o cronômetro para 02:00 (120s) para o Round 3 (desempate)
     setIsTimerRunning(false);
     setMatchTimer(120);
+    broadcastTimer(120, false);
     setCurrentRoundNumber(3);
     setToastMessage(`Round 2 gravado (${formatTimer(elapsed)})! Cronômetro zerado para 02:00 (Round 3).`);
     setTimeout(() => setToastMessage(null), 3000);
@@ -264,6 +341,7 @@ export default function AvaliacaoTorneio({
     const elapsed = Math.max(1, 120 - matchTimer);
     setRound3Duration(elapsed);
     setIsTimerRunning(false);
+    broadcastTimer(matchTimer, false);
     setToastMessage(`Round 3 gravado (${formatTimer(elapsed)})! Decisão pronta para confirmação.`);
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -337,9 +415,9 @@ export default function AvaliacaoTorneio({
       <AdminSidebar active="rules" onNavigate={onNavigate} onLogout={onLogout} />
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-[256px] flex flex-col min-h-screen">
+      <div className="flex-1 pl-0 md:pl-[256px] flex flex-col min-h-screen">
         {/* Top Header Bar / Stepper */}
-        <header className="h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-8 shrink-0">
+        <header className="min-h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 py-2 shrink-0 flex-wrap gap-2">
           {/* Stepper Navigation */}
           <div className="flex items-center gap-2">
             <button
@@ -799,7 +877,11 @@ export default function AvaliacaoTorneio({
                 {/* 3 Circular Controls */}
                 <div className="flex items-center justify-center gap-4 pt-2">
                   <button
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    onClick={() => {
+                      const next = !isTimerRunning;
+                      setIsTimerRunning(next);
+                      broadcastTimer(matchTimer, next);
+                    }}
                     title={isTimerRunning ? "Pausar Combate" : "Iniciar Combate"}
                     className="w-12 h-12 rounded-full bg-[#00f2ff] hover:bg-[#38bdf8] text-[#00356a] flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
                   >
@@ -807,7 +889,10 @@ export default function AvaliacaoTorneio({
                   </button>
 
                   <button
-                    onClick={() => setIsTimerRunning(false)}
+                    onClick={() => {
+                      setIsTimerRunning(false);
+                      broadcastTimer(matchTimer, false);
+                    }}
                     title="Pausar"
                     className="w-12 h-12 rounded-full bg-[#1e293b] hover:bg-[#334155] text-white flex items-center justify-center text-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
                   >
@@ -818,6 +903,7 @@ export default function AvaliacaoTorneio({
                     onClick={() => {
                       setIsTimerRunning(false);
                       setMatchTimer(120);
+                      broadcastTimer(120, false);
                     }}
                     title="Reiniciar Tempo (2:00)"
                     className="w-12 h-12 rounded-full bg-[#1e293b] hover:bg-[#334155] text-white flex items-center justify-center text-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
