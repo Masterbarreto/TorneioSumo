@@ -55,11 +55,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <div
-      className="relative w-full min-h-screen bg-[#f7f9ff]"
-      style={{ animation: "dashIn 0.35s cubic-bezier(0.22,1,0.36,1) both" }}
-    >
-      <style>{`@keyframes dashIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    <div className="relative w-full min-h-screen bg-[#f7f9ff]">
+      {/* Shared fixed sidebar */}
+      <AdminSidebar active="home" onNavigate={navigate} onLogout={onLogout} />
 
       <div className="w-full">
         <DashboardDoTecnico
@@ -69,9 +67,6 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           onToggleChampionship={() => setChampionshipStarted(!championshipStarted)}
         />
       </div>
-
-      {/* Shared sidebar sits on top of the imported one */}
-      <AdminSidebar active="home" onNavigate={navigate} onLogout={onLogout} />
     </div>
   );
 }

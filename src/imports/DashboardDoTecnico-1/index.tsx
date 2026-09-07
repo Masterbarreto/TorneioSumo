@@ -455,7 +455,7 @@ function TopNavigationBar({
   }, []);
 
   return (
-    <div className="absolute backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] flex h-[64px] items-center justify-between left-0 pl-16 pr-6 md:px-8 top-0 w-full z-10 border-b border-[rgba(226,232,240,0.4)] shadow-xs" data-name="Top Navigation Bar">
+    <div className="sticky top-0 z-30 backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] flex h-[64px] items-center justify-between pl-16 pr-6 md:px-8 w-full border-b border-[rgba(226,232,240,0.4)] shadow-xs" data-name="Top Navigation Bar">
       <Container15 />
       <div className="flex items-center gap-3 relative z-10 flex-wrap">
         {/* Championship Status Button */}
@@ -1195,7 +1195,7 @@ function ActivityShortcutsAsymmetricSection({ atividades, onNavigate }: { ativid
 function CanvasContent({ stats, onNavigate }: { stats?: any; onNavigate?: (key: string) => void }) {
   return (
     <div className="min-h-screen relative shrink-0 w-full" data-name="Canvas Content">
-      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[48px] pt-[80px] sm:pt-[96px] px-4 sm:px-8 relative size-full max-w-7xl mx-auto">
+      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[48px] pt-6 sm:pt-8 px-4 sm:px-8 relative size-full max-w-7xl mx-auto">
         <HeroBentoHeader torneioAtivo={stats?.torneioAtivo} onNavigate={onNavigate} />
         <RealTimeStatsRow 
           totalEquipes={stats?.totalEquipes} 
