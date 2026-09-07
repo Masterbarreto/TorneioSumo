@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import svgPaths from "./svg-n9wrsd9n43";
 import imgTechnicalRobotBlueprint from "./28c0bcbd6906c412997a24a68b3eab00db7c9e46.png";
+import { getUserSession } from "../../utils/cookies";
 
 function Container2() {
   return (
@@ -448,7 +449,7 @@ function TopNavigationBar({
 
   useEffect(() => {
     try {
-      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      const u = getUserSession() || JSON.parse(localStorage.getItem("user") || "{}");
       if (u.name || u.nome) setUserName(u.name || u.nome);
       if (u.cargo || u.role) setUserRole(u.cargo || u.role);
     } catch {}

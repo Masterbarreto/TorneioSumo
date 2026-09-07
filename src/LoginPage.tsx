@@ -234,11 +234,11 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
   const [password, setPassword] = useState("");
   const [adminCode, setAdminCode] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; adminCode?: string }>({});
 
-  const ADMIN_CREDENTIALS = { email: "admin@senac.edu.br", password: "admin@2026", code: "SENAC2026" };
+  const ADMIN_CODE = "SENAC2026";
 
   const validate = () => {
     const e: typeof errors = {};
@@ -251,12 +251,10 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
     if (password.length < 6) {
       e.password = "A senha deve ter no mínimo 6 caracteres.";
     }
-    if (role === "ADMIN" && Object.keys(e).length === 0) {
-      if (trimmed !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
-        e.email = "Credenciais de administrador inválidas.";
-        e.password = " ";
-      }
-      if (adminCode !== ADMIN_CREDENTIALS.code) {
+    if (role === "ADMIN") {
+      if (!adminCode.trim()) {
+        e.adminCode = "Insira o código especial de administrador.";
+      } else if (adminCode !== ADMIN_CODE) {
         e.adminCode = "Código especial inválido.";
       }
     }
@@ -272,12 +270,17 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: email.trim(), password })
+        body: JSON.stringify({ email: email.trim(), password, remember })
       });
       const data = await res.json();
       setLoading(false);
       if (res.status !== 200) {
         setErrors({ email: data.message || data.error || "Credenciais inválidas." });
+        return;
+      }
+
+      if (role === "ADMIN" && data.cargo !== "ADMIN" && data.cargo !== "PROFESSOR") {
+        setErrors({ email: "Esta conta não possui privilégios de administrador." });
         return;
       }
       
@@ -287,7 +290,7 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         email: email.trim(),
         cargo: data.cargo || data.role || role,
         teamId: data.teamId,
-      });
+      }, remember);
       onSubmit(data.cargo || role, data.userId);
     } catch (err) {
       setLoading(false);
@@ -303,17 +306,6 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
       </div>
 
       <RoleTabs value={role} onChange={setRole} />
-
-      {role === "ADMIN" && (
-        <div className="flex items-start gap-2 bg-[#edf4ff] border border-[#c2d9f5] rounded-[8px] px-4 py-3">
-          <svg className="mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00356a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-          <div className="font-['Inter:Regular',Inter,sans-serif] text-[12px] text-[#00356a] leading-relaxed">
-            <span className="font-['Inter:Bold',Inter,sans-serif] font-bold">Acesso restrito.</span> Use as credenciais de administrador:<br />
-            <span className="font-['Liberation_Mono:Regular',monospace] text-[11px]">admin@senac.edu.br</span> / <span className="font-['Liberation_Mono:Regular',monospace] text-[11px]">admin@2026</span><br />
-            Código Especial: <span className="font-['Liberation_Mono:Regular',monospace] text-[11px]">SENAC2026</span>
-          </div>
-        </div>
-      )}
 
       <Field label="E-mail Institucional" hint={errors.email}>
         <div className="relative">
@@ -365,10 +357,15 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         </Field>
       )}
 
-      <label className="flex items-center gap-3 cursor-pointer group">
+      <label className="flex items-center gap-3 cursor-pointer group select-none">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="sr-only"
+        />
         <div
           className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-all duration-150 ${remember ? "bg-[#00356a] border-[#00356a]" : "border-[#c2c6d2] group-hover:border-[#00356a]"}`}
-          onClick={() => setRemember((v) => !v)}
         >
           {remember && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
         </div>
@@ -389,7 +386,9 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
 
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-[#e2e8f0]" />
-        <span className="font-['Inter:Regular',Inter,sans-serif] text-[#b0bac8] text-[11px] tracking-[1px] uppercase">OU CADASTRE SUA EQUIPE</span>
+        <span className="font-['Inter:Regular',Inter,sans-serif] text-[#b0bac8] text-[11px] tracking-[1px] uppercase">
+          {role === "ADMIN" ? "OU CADASTRE NOVO ADMINISTRADOR" : "OU CADASTRE SUA EQUIPE"}
+        </span>
         <div className="flex-1 h-px bg-[#e2e8f0]" />
       </div>
 
@@ -398,12 +397,14 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         className="border-2 border-[#00356a] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[13px] tracking-[1.4px] uppercase py-3.5 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#edf4ff] transition-all duration-200 active:scale-[0.99] group"
       >
         <span className="transition-transform group-hover:rotate-90 duration-200"><IconPlus /></span>
-        REGISTRAR NOVA EQUIPE
+        {role === "ADMIN" ? "REGISTRAR  novo adiministrador" : "REGISTRAR NOVA EQUIPE"}
       </button>
 
       <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[13px] text-center">
-        Primeira vez no torneio?{" "}
-        <button onClick={onRegister} className="font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#8c4f00] hover:underline">Veja as regras de participação.</button>
+        {role === "ADMIN" ? "Primeira vez como administrador? " : "Primeira vez no torneio? "}
+        <button onClick={onRegister} className="font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#8c4f00] hover:underline">
+          {role === "ADMIN" ? "Solicitar credencial de gestão." : "Veja as regras de participação."}
+        </button>
       </p>
     </div>
   );
@@ -477,8 +478,12 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
       </button>
 
       <div>
-        <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[26px]">Create Profile</h2>
-        <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[14px] mt-1">Fill in technical credentials to continue.</p>
+        <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[26px]">
+          {role === "ADMIN" ? "Cadastrar Administrador" : "Cadastrar Nova Equipe"}
+        </h2>
+        <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[14px] mt-1">
+          {role === "ADMIN" ? "Preencha as credenciais institucionais para gerenciar o torneio." : "Preencha as informações técnicas para continuar."}
+        </p>
       </div>
 
       <RoleTabs value={role} onChange={setRole} />
@@ -527,7 +532,7 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
       >
         {loading ? (
           <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> ENVIANDO...</>
-        ) : "FINALIZAR CADASTRO"}
+        ) : (role === "ADMIN" ? "REGISTRAR  novo adiministrador" : "REGISTRAR NOVA EQUIPE")}
       </button>
 
       <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[13px] text-center">
