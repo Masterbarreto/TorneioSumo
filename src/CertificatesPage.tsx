@@ -1,5 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type DocType = "badge" | "certificate";
@@ -355,9 +358,68 @@ export default function CertificatesPage({
   const [toast, setToast] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    // 1. Fetch real teams from MongoDB
+    fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mappedTeams: Team[] = data.map((t: any, tIdx: number) => {
+            const teamName = t.name || t.nome || `Equipe ${tIdx + 1}`;
+            const mList =
+              Array.isArray(t.members) && t.members.length > 0
+                ? t.members.map((m: any, mIdx: number) => ({
+                    id: m.id || m.cpf || `m_${tIdx}_${mIdx}`,
+                    name: m.name || `Integrante ${mIdx + 1}`,
+                    role: m.role || "Competidor",
+                    photo:
+                      m.photo ||
+                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
+                    checked: true,
+                  }))
+                : [
+                    {
+                      id: `m_${tIdx}_cap`,
+                      name: `Capitão - ${teamName}`,
+                      role: "Líder Técnico",
+                      photo:
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=faces&cs=tinysrgb&fit=crop&h=160&w=160",
+                      checked: true,
+                    },
+                  ];
+
+            return {
+              id: t.id || t._id,
+              name: teamName,
+              code: String((t.teamId || t._id || String(tIdx + 1)).slice(-3)),
+              placement: (tIdx % 3) + 1,
+              members: mList,
+            };
+          });
+
+          setTeams(mappedTeams);
+          setSelectedTeamId(mappedTeams[0].id);
+          if (mappedTeams[0].members.length > 0) {
+            setPreviewMemberId(mappedTeams[0].members[0].id);
+          }
+        }
+      })
+      .catch((err) => console.error("Erro ao carregar equipes em certificados:", err));
+
+    // 2. Fetch history from MongoDB
+    fetch("http://localhost:3000/api/v1/certificados", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setHistory(data);
+        }
+      })
+      .catch((err) => console.error("Erro ao carregar histórico de certificados:", err));
+  }, []);
+
   const team = teams.find((t) => t.id === selectedTeamId) ?? teams[0];
-  const checkedMembers = team.members.filter((m) => m.checked);
-  const previewMember = team.members.find((m) => m.id === previewMemberId) ?? checkedMembers[0] ?? team.members[0];
+  const checkedMembers = team?.members ? team.members.filter((m) => m.checked) : [];
+  const previewMember = team?.members ? (team.members.find((m) => m.id === previewMemberId) ?? checkedMembers[0] ?? team.members[0]) : { id: "p", name: "Participante", role: "Competidor", photo: "", checked: true };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -367,26 +429,110 @@ export default function CertificatesPage({
   const selectAll = (tid: string, val: boolean) =>
     setTeams((ts) => ts.map((t) => t.id === tid ? { ...t, members: t.members.map((m) => ({ ...m, checked: val })) } : t));
 
+  const handleTeamChange = (newTeamId: string) => {
+    setSelectedTeamId(newTeamId);
+    const targetTeam = teams.find((t) => t.id === newTeamId);
+    if (targetTeam && targetTeam.members.length > 0) {
+      // Ensure all members are checked by default
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === newTeamId
+            ? { ...t, members: t.members.map((m) => ({ ...m, checked: true })) }
+            : t
+        )
+      );
+      setPreviewMemberId(targetTeam.members[0].id);
+    }
+  };
+
   const handlePrint = () => {
+    if (checkedMembers.length === 0) {
+      showToast("Selecione ao menos um membro para imprimir.");
+      return;
+    }
     setPrinting(true);
+    showToast(`Preparando impressão em lote de ${checkedMembers.length} ${docType === "badge" ? "credenciais" : "certificados"}...`);
     setTimeout(() => {
       window.print();
       setPrinting(false);
-      showToast(`Imprimindo ${checkedMembers.length} ${docType === "badge" ? "credenciais" : "certificados"}...`);
-    }, 600);
+    }, 500);
   };
 
   const handleExport = async () => {
+    if (checkedMembers.length === 0) {
+      showToast("Selecione ao menos um membro para exportar.");
+      return;
+    }
+
     setExporting(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    setExporting(false);
-    const entry: HistoryEntry = {
-      id: `h${Date.now()}`, label: team.name,
-      sub: `${checkedMembers.length} ${docType === "badge" ? "credenciais" : "certificados"} · agora`,
-      time: "agora", done: true,
-    };
-    setHistory((h) => [entry, ...h]);
-    showToast(`✓ ${checkedMembers.length} PDFs exportados — ${team.name}`);
+    showToast(`Gerando PDF de ${checkedMembers.length} ${docType === "badge" ? "credenciais" : "certificados"}...`);
+
+    try {
+      const isBadge = docType === "badge";
+      // Badges: 100mm x 150mm. Certs: A4 landscape (297mm x 210mm)
+      const pdf = isBadge
+        ? new jsPDF({ orientation: "portrait", unit: "mm", format: [100, 150] })
+        : new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+      for (let i = 0; i < checkedMembers.length; i++) {
+        const m = checkedMembers[i];
+        const cardEl = document.getElementById(`export-card-${m.id}`);
+
+        if (cardEl) {
+          const canvas = await html2canvas(cardEl, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: isBadge ? "#0a1f3a" : "#ffffff",
+          });
+
+          const imgData = canvas.toDataURL("image/png");
+
+          if (i > 0) {
+            if (isBadge) {
+              pdf.addPage([100, 150], "portrait");
+            } else {
+              pdf.addPage("a4", "landscape");
+            }
+          }
+
+          if (isBadge) {
+            pdf.addImage(imgData, "PNG", 5, 5, 90, 140);
+          } else {
+            pdf.addImage(imgData, "PNG", 15, 12, 267, 186);
+          }
+        }
+      }
+
+      const fileName = `${isBadge ? "Credenciais" : "Certificados"}_${team.name.replace(/\s+/g, "_")}.pdf`;
+      pdf.save(fileName);
+
+      // Save to backend database
+      const res = await fetch("http://localhost:3000/api/v1/certificados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          teamId: team.id,
+          teamName: team.name,
+          docType,
+          placement,
+          members: checkedMembers,
+        }),
+      });
+
+      if (res.ok) {
+        const entry = await res.json();
+        setHistory((h) => [entry, ...h]);
+      }
+
+      showToast(`✓ PDF "${fileName}" baixado com sucesso!`);
+    } catch (e: any) {
+      console.error("Erro na geração do PDF:", e);
+      showToast("Erro ao gerar PDF.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Total issued %
@@ -395,17 +541,47 @@ export default function CertificatesPage({
   const pct = Math.min(100, Math.round((issued / Math.max(totalMembers, 1)) * 100)) || 84;
   const remaining = Math.max(0, totalMembers - issued);
 
+
+
   return (
     <div className="fixed inset-0 bg-[#f7f9ff] z-[800]" style={{ animation: "certPageIn 0.3s ease both" }}>
       <style>{`
         @keyframes certPageIn { from { opacity:0; } to { opacity:1; } }
         @keyframes toastIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
         @media print {
-          body > * { display: none !important; }
-          .print-area { display: flex !important; position: fixed; inset: 0; align-items: center; justify-content: center; background: white; }
+          @page {
+            size: auto;
+            margin: 5mm;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-batch-area,
+          #printable-batch-area * {
+            visibility: visible !important;
+          }
+          #printable-batch-area {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: white !important;
+            z-index: 999999 !important;
+            pointer-events: auto !important;
+          }
+          .print-page-break {
+            page-break-after: always !important;
+            break-after: page !important;
+            min-height: 95vh !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 20px 0 !important;
+          }
         }
-        .print-area { display: none; }
       `}</style>
+
 
       <AdminSidebar active="certificados" onNavigate={onNavigate} onLogout={onLogout} />
 
@@ -416,8 +592,13 @@ export default function CertificatesPage({
           <h1 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[18px] tracking-[-0.5px]">Credenciais e Certificados</h1>
         </div>
         <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-['Inter:Bold',Inter,sans-serif] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            API ONLINE (MongoDB Atlas)
+          </span>
           <button
             onClick={handlePrint}
+
             disabled={printing || checkedMembers.length === 0}
             className="flex items-center gap-2 border border-[rgba(194,198,210,0.8)] bg-white text-[#051d30] font-['Inter:Bold',Inter,sans-serif] font-bold text-[12px] tracking-[0.8px] uppercase px-4 py-2.5 rounded-[6px] hover:bg-[#f7f9ff] disabled:opacity-50 transition-all"
           >
@@ -470,9 +651,10 @@ export default function CertificatesPage({
               <p className="font-['Inter:Regular',Inter,sans-serif] text-[10px] text-[#8c9ab0] uppercase tracking-[0.8px] mb-2">Equipe</p>
               <select
                 value={selectedTeamId}
-                onChange={(e) => { setSelectedTeamId(e.target.value); const t = teams.find((t) => t.id === e.target.value); if (t) setPreviewMemberId(t.members[0].id); }}
+                onChange={(e) => handleTeamChange(e.target.value)}
                 className="w-full bg-[#f7f9ff] border border-[#e2e8f0] rounded-[6px] px-3 py-2.5 font-['Inter:Regular',Inter,sans-serif] text-[13px] text-[#051d30] outline-none focus:border-[#00356a] appearance-none cursor-pointer"
               >
+
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name} (0{t.code})</option>)}
               </select>
             </div>
@@ -638,7 +820,43 @@ export default function CertificatesPage({
         </div>
       </main>
 
+      {/* ── Batch Printable & Exportable Hidden Container ── */}
+      <div
+        id="printable-batch-area"
+        style={{
+          position: "fixed",
+          left: -9999,
+          top: 0,
+          width: docType === "badge" ? 300 : 850,
+          zIndex: -1,
+          opacity: 1,
+          pointerEvents: "none",
+        }}
+      >
+        {checkedMembers.map((m) => (
+          <div
+            key={m.id}
+            id={`export-card-${m.id}`}
+            className="print-page-break"
+            style={{
+              padding: "16px 0",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: docType === "badge" ? "#061325" : "#ffffff",
+            }}
+          >
+            {docType === "badge" ? (
+              <BadgeCard member={m} team={team} showPhoto={showPhoto} showQR={showQR} showSeal={showSeal} />
+            ) : (
+              <CertCard member={m} team={team} placement={placement} showQR={showQR} />
+            )}
+          </div>
+        ))}
+      </div>
+
       {/* Toast */}
+
       {toast && (
         <div className="fixed bottom-6 right-6 z-[900] bg-[#051d30] text-white px-5 py-3 rounded-[4px] shadow-2xl border-l-4 border-[#00f2ff] font-['Inter:Regular',Inter,sans-serif] text-[13px] flex items-center gap-3 max-w-sm" style={{ animation: "toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>

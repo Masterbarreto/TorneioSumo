@@ -10,12 +10,21 @@ import AvaliacaoTorneio from "./AvaliacaoTorneio";
 type AdminPage = "home" | "arenas" | "certificados" | "times" | "partidas" | "rules";
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const [page, setPage] = useState<AdminPage>("home");
+  const [page, setPage] = useState<AdminPage>(() => {
+    const p = window.location.pathname.replace("/", "").toLowerCase();
+    if (p === "avaliar") return "rules";
+    const validPages: AdminPage[] = ["home", "arenas", "certificados", "times", "partidas", "rules"];
+    return validPages.includes(p as AdminPage) ? (p as AdminPage) : "home";
+  });
   const [championshipStarted, setChampionshipStarted] = useState(false);
 
   const navigate = (key: string) => {
-    if (key === "logout") onLogout();
-    else setPage(key as AdminPage);
+    if (key === "logout") {
+      onLogout();
+    } else {
+      setPage(key as AdminPage);
+      window.history.pushState(null, "", "/" + key);
+    }
   };
 
   if (page === "arenas") {
@@ -42,7 +51,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   if (page === "rules") {
-    return <AvaliacaoTorneio />;
+    return <AvaliacaoTorneio onNavigate={navigate} onLogout={onLogout} />;
   }
 
   return (
@@ -53,7 +62,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       <style>{`@keyframes dashIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       <div className="min-w-[1280px]">
-        <DashboardDoTecnico />
+        <DashboardDoTecnico onLogout={onLogout} onNavigate={navigate} />
       </div>
 
       {/* Shared sidebar sits on top of the imported one */}

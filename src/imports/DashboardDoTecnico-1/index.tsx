@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import svgPaths from "./svg-n9wrsd9n43";
 import imgTechnicalRobotBlueprint from "./28c0bcbd6906c412997a24a68b3eab00db7c9e46.png";
 
@@ -341,9 +342,9 @@ function Container14() {
   );
 }
 
-function Link8() {
+function Link8({ onClick }: { onClick?: () => void }) {
   return (
-    <div className="relative shrink-0 w-full" data-name="Link">
+    <div className="relative shrink-0 w-full cursor-pointer" data-name="Link" onClick={onClick}>
       <div className="flex flex-row items-center size-full">
         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex gap-[12px] items-center px-[16px] py-[8px] relative size-full">
           <Container14 />
@@ -356,24 +357,24 @@ function Link8() {
   );
 }
 
-function HorizontalBorder() {
+function HorizontalBorder({ onLogout }: { onLogout?: () => void }) {
   return (
     <div className="relative shrink-0 w-full" data-name="HorizontalBorder">
       <div aria-hidden className="absolute border-[rgba(194,198,210,0.2)] border-solid border-t inset-0 pointer-events-none" />
       <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col gap-[4px] items-start pt-[17px] relative size-full">
         <Link7 />
-        <Link8 />
+        <Link8 onClick={onLogout} />
       </div>
     </div>
   );
 }
 
-function AsideSideNavigationBarHiddenOnMobile() {
+function AsideSideNavigationBarHiddenOnMobile({ onLogout }: { onLogout?: () => void }) {
   return (
     <div className="absolute bg-[#edf4ff] content-stretch flex flex-col h-[1391px] items-start justify-between left-0 pb-[16px] pl-[16px] pr-[17px] pt-[80px] top-0 w-[256px]" data-name="Aside - Side Navigation Bar (Hidden on Mobile)">
       <div aria-hidden className="absolute border-[rgba(194,198,210,0.15)] border-r border-solid inset-0 pointer-events-none" />
       <Nav />
-      <HorizontalBorder />
+      <HorizontalBorder onLogout={onLogout} />
     </div>
   );
 }
@@ -434,11 +435,31 @@ function Container17() {
 }
 
 function TopNavigationBar() {
+  const [userName, setUserName] = useState("Administrador");
+  const [userRole, setUserRole] = useState("ADMIN");
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      if (u.name || u.nome) setUserName(u.name || u.nome);
+      if (u.cargo || u.role) setUserRole(u.cargo || u.role);
+    } catch {}
+  }, []);
+
   return (
-    <div className="absolute backdrop-blur-[12px] bg-[rgba(255,255,255,0.7)] content-stretch flex h-[64px] items-center justify-between left-0 pb-px px-[32px] top-0 w-[1818px]" data-name="Top Navigation Bar">
+    <div className="absolute backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] content-stretch flex h-[64px] items-center justify-between left-0 pb-px px-[32px] top-0 w-full z-10" data-name="Top Navigation Bar">
       <div aria-hidden className="absolute border-[rgba(226,232,240,0.15)] border-b border-solid inset-0 pointer-events-none shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]" />
       <Container15 />
-      <Container17 />
+      <div className="flex items-center gap-4 relative z-10">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#edf4ff] border border-[rgba(194,198,210,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[12px] font-bold text-[#00356a] uppercase tracking-[0.5px]">API Conectada</span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="font-['Space_Grotesk:Bold',sans-serif] font-bold text-[13px] text-[#051d30]">{userName}</span>
+          <span className="font-['Inter:Regular',sans-serif] text-[11px] text-[#727782] tracking-wider uppercase">{userRole}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -484,11 +505,14 @@ function Container20() {
   );
 }
 
-function Container19() {
+function Container19({ torneioAtivo }: { torneioAtivo?: any }) {
   return (
     <div className="content-stretch flex flex-col gap-[8.5px] h-[216px] items-start relative shrink-0 w-full" data-name="Container">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#96bdff] text-[12px] tracking-[1.2px] uppercase whitespace-nowrap">
-        <p className="leading-[16px]">NOVA ROBOTICS • CENTRAL COMMAND</p>
+      <div className="[word-break:break-word] flex items-center gap-2 font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#96bdff] text-[12px] tracking-[1.2px] uppercase whitespace-nowrap">
+        <span className="w-2 h-2 rounded-full bg-[#00f2ff] animate-pulse" />
+        <p className="leading-[16px]">
+          {torneioAtivo ? `${torneioAtivo.nome} • STATUS: ${torneioAtivo.status}` : "SENAC ROBOTICS • CENTRAL COMMAND"}
+        </p>
       </div>
       <Heading />
       <Container20 />
@@ -496,9 +520,13 @@ function Container19() {
   );
 }
 
-function Button2() {
+function Button2({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="bg-[#fd9923] content-stretch flex flex-col items-center justify-center px-[24px] py-[10px] relative rounded-[12px] shrink-0" data-name="Button">
+    <div 
+      className="bg-[#fd9923] content-stretch flex flex-col items-center justify-center px-[24px] py-[10px] relative rounded-[12px] shrink-0 cursor-pointer hover:bg-[#e0861b] transition-colors" 
+      data-name="Button"
+      onClick={() => onNavigate?.("arenas")}
+    >
       <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#663800] text-[12px] text-center uppercase whitespace-nowrap">
         <p className="leading-[16px]">VER ARENAS</p>
       </div>
@@ -506,51 +534,55 @@ function Button2() {
   );
 }
 
-function Button3() {
+function Button3({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="backdrop-blur-[4px] bg-[rgba(255,255,255,0.1)] content-stretch flex flex-col items-center justify-center px-[24px] py-[10px] relative rounded-[12px] shrink-0" data-name="Button">
+    <div 
+      className="backdrop-blur-[4px] bg-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.25)] transition-colors content-stretch flex flex-col items-center justify-center px-[24px] py-[10px] relative rounded-[12px] shrink-0 cursor-pointer" 
+      data-name="Button"
+      onClick={() => onNavigate?.("times")}
+    >
       <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-center text-white uppercase whitespace-nowrap">
-        <p className="leading-[16px]">RELATÓRIOS</p>
+        <p className="leading-[16px]">GERENCIAR TIMES</p>
       </div>
     </div>
   );
 }
 
-function Container21() {
+function Container21({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
     <div className="content-stretch flex gap-[16px] items-start relative shrink-0 w-full" data-name="Container">
-      <Button2 />
-      <Button3 />
+      <Button2 onNavigate={onNavigate} />
+      <Button3 onNavigate={onNavigate} />
     </div>
   );
 }
 
-function Margin5() {
+function Margin5({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
     <div className="content-stretch flex flex-col items-start pt-[24px] relative shrink-0 w-full" data-name="Margin">
-      <Container21 />
+      <Container21 onNavigate={onNavigate} />
     </div>
   );
 }
 
-function Background() {
+function Background({ torneioAtivo, onNavigate }: { torneioAtivo?: any; onNavigate?: (key: string) => void }) {
   return (
     <div className="col-[1/span_3] justify-self-stretch min-h-[280px] relative rounded-[12px] row-1 self-start shrink-0" style={{ backgroundImage: "linear-gradient(167.21226664994956deg, rgb(0, 53, 106) 0%, rgb(0, 75, 147) 100%)" }} data-name="Background">
       <div className="min-h-[inherit] overflow-clip rounded-[inherit] size-full">
         <div className="content-stretch flex flex-col items-start justify-between min-h-[inherit] p-[32px] relative size-full">
           <Container18 />
-          <Container19 />
-          <Margin5 />
+          <Container19 torneioAtivo={torneioAtivo} />
+          <Margin5 onNavigate={onNavigate} />
         </div>
       </div>
     </div>
   );
 }
 
-function HeroBentoHeader() {
+function HeroBentoHeader({ torneioAtivo, onNavigate }: { torneioAtivo?: any; onNavigate?: (key: string) => void }) {
   return (
     <div className="gap-x-[24px] gap-y-[24px] grid grid-cols-[repeat(3,minmax(0,1fr))] grid-rows-[_316px] relative shrink-0 w-full" data-name="Hero Bento Header">
-      <Background />
+      <Background torneioAtivo={torneioAtivo} onNavigate={onNavigate} />
     </div>
   );
 }
@@ -585,32 +617,32 @@ function Container24() {
   );
 }
 
-function Heading2() {
+function Heading2({ count = 18 }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Heading 4">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[#051d30] text-[30px] whitespace-nowrap">
-        <p className="leading-[36px]">142</p>
+        <p className="leading-[36px]">{count < 10 ? `0${count}` : count}</p>
       </div>
     </div>
   );
 }
 
-function Container23() {
+function Container23({ count }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Container">
       <Container24 />
-      <Heading2 />
+      <Heading2 count={count} />
     </div>
   );
 }
 
-function Background1() {
+function Background1({ count }: { count?: number }) {
   return (
     <div className="bg-[#edf4ff] col-1 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow />
-          <Container23 />
+          <Container23 count={count} />
         </div>
       </div>
     </div>
@@ -647,32 +679,32 @@ function Container27() {
   );
 }
 
-function Heading3() {
+function Heading3({ count = 3 }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Heading 4">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[#051d30] text-[30px] whitespace-nowrap">
-        <p className="leading-[36px]">12</p>
+        <p className="leading-[36px]">{count < 10 ? `0${count}` : count}</p>
       </div>
     </div>
   );
 }
 
-function Container26() {
+function Container26({ count }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Container">
       <Container27 />
-      <Heading3 />
+      <Heading3 count={count} />
     </div>
   );
 }
 
-function Background2() {
+function Background2({ count }: { count?: number }) {
   return (
     <div className="bg-[#edf4ff] col-2 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow1 />
-          <Container26 />
+          <Container26 count={count} />
         </div>
       </div>
     </div>
@@ -709,44 +741,44 @@ function Container30() {
   );
 }
 
-function Heading4() {
+function Heading4({ count = 18 }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Heading 4">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[#051d30] text-[30px] whitespace-nowrap">
-        <p className="leading-[36px]">08</p>
+        <p className="leading-[36px]">{count < 10 ? `0${count}` : count}</p>
       </div>
     </div>
   );
 }
 
-function Container29() {
+function Container29({ count }: { count?: number }) {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Container">
       <Container30 />
-      <Heading4 />
+      <Heading4 count={count} />
     </div>
   );
 }
 
-function Background3() {
+function Background3({ count }: { count?: number }) {
   return (
     <div className="bg-[#edf4ff] col-3 h-[104px] justify-self-stretch relative rounded-[12px] row-1 shrink-0" data-name="Background">
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[20px] items-center p-[24px] relative size-full">
           <BackgroundShadow2 />
-          <Container29 />
+          <Container29 count={count} />
         </div>
       </div>
     </div>
   );
 }
 
-function RealTimeStatsRow() {
+function RealTimeStatsRow({ totalEquipes, arenasAtivas, validacoesPendentes }: { totalEquipes?: number; arenasAtivas?: number; validacoesPendentes?: number }) {
   return (
     <div className="gap-x-[24px] gap-y-[24px] grid grid-cols-[repeat(3,minmax(0,1fr))] grid-rows-[_104px] h-[104px] py-[7px] relative shrink-0 w-full" data-name="Real-Time Stats Row">
-      <Background1 />
-      <Background2 />
-      <Background3 />
+      <Background1 count={totalEquipes} />
+      <Background2 count={arenasAtivas} />
+      <Background3 count={validacoesPendentes} />
     </div>
   );
 }
@@ -762,238 +794,95 @@ function Heading1() {
   );
 }
 
-function Button4() {
+function Button4({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="content-stretch flex flex-col items-center justify-center relative shrink-0" data-name="Button">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#00356a] text-[12px] text-center whitespace-nowrap">
+    <div 
+      className="content-stretch flex flex-col items-center justify-center relative shrink-0 cursor-pointer" 
+      data-name="Button"
+      onClick={() => onNavigate?.("times")}
+    >
+      <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#00356a] text-[12px] text-center whitespace-nowrap hover:underline">
         <p className="leading-[16px]">VER TUDO</p>
       </div>
     </div>
   );
 }
 
-function Container31() {
+function Container31({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
     <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-name="Container">
       <Heading1 />
-      <Button4 />
+      <Button4 onNavigate={onNavigate} />
     </div>
   );
 }
 
-function Container33() {
-  return (
-    <div className="relative shrink-0 size-[20px]" data-name="Container">
-      <svg className="absolute block inset-0 size-full" fill="none" height="20" preserveAspectRatio="none" viewBox="0 0 20 20" width="20">
-        <g id="Container">
-          <path d={svgPaths.p2d8e4cc0} fill="#00356A" id="Icon" />
-        </g>
-      </svg>
-    </div>
-  );
-}
+function Container32({ atividades = [] }: { atividades?: any[] }) {
+  if (!atividades || atividades.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-[8px] text-center w-full text-[#727782] text-[14px]">
+        Nenhuma atividade recente registrada no momento.
+      </div>
+    );
+  }
 
-function Background4() {
   return (
-    <div className="bg-[#d9eaff] content-stretch flex items-center justify-center relative rounded-[4px] shrink-0 size-[40px]" data-name="Background">
-      <Container33 />
-    </div>
-  );
-}
-
-function Paragraph() {
-  return (
-    <div className="relative shrink-0 w-full" data-name="Paragraph">
-      <div className="[word-break:break-word] content-stretch flex font-['Inter:Bold',sans-serif] font-bold items-start justify-between leading-[0] not-italic relative size-full whitespace-nowrap">
-        <div className="flex flex-col justify-center relative shrink-0 text-[#051d30] text-[16px]">
-          <p className="leading-[24px]">Nova Arena Criada: Alpha-7</p>
+    <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full" data-name="Container">
+      {atividades.map((item, idx) => (
+        <div key={item.id || idx} className={`${idx % 2 === 0 ? "bg-white" : "bg-[#edf4ff]"} relative rounded-[8px] shrink-0 w-full transition-all hover:shadow-sm`} data-name="Activity Item">
+          <div className="content-stretch flex gap-[16px] items-start p-[20px] relative size-full">
+            <div className="bg-[#d9eaff] content-stretch flex items-center justify-center relative rounded-[4px] shrink-0 size-[40px]" data-name="Background">
+              {item.tipo === "match" ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00356a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ) : item.tipo === "tournament" ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8C4F00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                  <path d="M4 22h16" />
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H7" />
+                  <path d="M14 14.66V17c0 .55.45 1 1 1h2" />
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00356a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              )}
+            </div>
+            <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
+              <div className="relative shrink-0 w-full">
+                <div className="content-stretch flex font-['Inter:Bold',sans-serif] font-bold items-start justify-between leading-[0] not-italic relative size-full whitespace-nowrap">
+                  <div className="flex flex-col justify-center relative shrink-0 text-[#051d30] text-[15px]">
+                    <p className="leading-[22px]">{item.titulo}</p>
+                  </div>
+                  <div className="flex flex-col justify-center relative shrink-0 text-[#727782] text-[10px] uppercase font-bold tracking-wider">
+                    <p className="leading-[15px]">{item.tempo}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
+                <div className="flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[13px] w-full">
+                  <p className="leading-[18px]">{item.subtitulo}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col justify-center relative shrink-0 text-[#727782] text-[10px] uppercase">
-          <p className="leading-[15px]">HÁ 5 MIN</p>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-function Container35() {
+function ActivityFeedEditorialStyle({ atividades, onNavigate }: { atividades?: any[]; onNavigate?: (key: string) => void }) {
   return (
-    <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[14px] w-full">
-        <p className="leading-[20px] mb-0">A arena focada em sustentabilidade foi adicionada ao torneio</p>
-        <p className="leading-[20px]">regional.</p>
-      </div>
-    </div>
-  );
-}
-
-function Container34() {
-  return (
-    <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative" data-name="Container">
-      <Paragraph />
-      <Container35 />
-    </div>
-  );
-}
-
-function ActivityItem() {
-  return (
-    <div className="bg-white relative rounded-[8px] shrink-0 w-full" data-name="Activity Item">
-      <div className="content-stretch flex gap-[16px] items-start p-[24px] relative size-full">
-        <Background4 />
-        <Container34 />
-      </div>
-    </div>
-  );
-}
-
-function Container36() {
-  return (
-    <div className="h-[20px] relative shrink-0 w-[16px]" data-name="Container">
-      <svg className="absolute block inset-0 size-full" fill="none" height="20" preserveAspectRatio="none" viewBox="0 0 16 20" width="16">
-        <g id="Container">
-          <path d={svgPaths.p15aec574} fill="#8C4F00" id="Icon" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Background6() {
-  return (
-    <div className="bg-[#d9eaff] content-stretch flex items-center justify-center relative rounded-[4px] shrink-0 size-[40px]" data-name="Background">
-      <Container36 />
-    </div>
-  );
-}
-
-function Paragraph1() {
-  return (
-    <div className="relative shrink-0 w-full" data-name="Paragraph">
-      <div className="[word-break:break-word] content-stretch flex font-['Inter:Bold',sans-serif] font-bold items-start justify-between leading-[0] not-italic pr-[0.01px] relative size-full whitespace-nowrap">
-        <div className="flex flex-col justify-center relative shrink-0 text-[#051d30] text-[16px]">
-          <p className="leading-[24px]">{`Equipe 'Cyber-Dragons' Validada`}</p>
-        </div>
-        <div className="flex flex-col justify-center relative shrink-0 text-[#727782] text-[10px] uppercase">
-          <p className="leading-[15px]">HÁ 1 HORA</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Container38() {
-  return (
-    <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[14px] w-full">
-        <p className="leading-[20px] mb-0">Todos os componentes mecânicos foram aprovados pela inspeção</p>
-        <p className="leading-[20px]">técnica.</p>
-      </div>
-    </div>
-  );
-}
-
-function Container37() {
-  return (
-    <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative" data-name="Container">
-      <Paragraph1 />
-      <Container38 />
-    </div>
-  );
-}
-
-function Background5() {
-  return (
-    <div className="bg-[#edf4ff] relative rounded-[8px] shrink-0 w-full" data-name="Background">
-      <div className="content-stretch flex gap-[16px] items-start p-[24px] relative size-full">
-        <Background6 />
-        <Container37 />
-      </div>
-    </div>
-  );
-}
-
-function Container39() {
-  return (
-    <div className="h-[19px] relative shrink-0 w-[22px]" data-name="Container">
-      <svg className="absolute block inset-0 size-full" fill="none" height="19" preserveAspectRatio="none" viewBox="0 0 22 19" width="22">
-        <g id="Container">
-          <path d={svgPaths.p7555480} fill="#BA1A1A" id="Icon" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Background8() {
-  return (
-    <div className="bg-[#d9eaff] content-stretch flex items-center justify-center relative rounded-[4px] shrink-0 size-[40px]" data-name="Background">
-      <Container39 />
-    </div>
-  );
-}
-
-function Paragraph2() {
-  return (
-    <div className="relative shrink-0 w-full" data-name="Paragraph">
-      <div className="[word-break:break-word] content-stretch flex font-['Inter:Bold',sans-serif] font-bold items-start justify-between leading-[0] not-italic pr-[0.01px] relative size-full whitespace-nowrap">
-        <div className="flex flex-col justify-center relative shrink-0 text-[#051d30] text-[16px]">
-          <p className="leading-[24px]">Alerta de Hardware na Arena Beta-2</p>
-        </div>
-        <div className="flex flex-col justify-center relative shrink-0 text-[#727782] text-[10px] uppercase">
-          <p className="leading-[15px]">HÁ 3 HORAS</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Container41() {
-  return (
-    <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
-      <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[14px] w-full">
-        <p className="leading-[20px] mb-0">Sensor de proximidade reportando falha intermitente na zona de</p>
-        <p className="leading-[20px]">resgate.</p>
-      </div>
-    </div>
-  );
-}
-
-function Container40() {
-  return (
-    <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative" data-name="Container">
-      <Paragraph2 />
-      <Container41 />
-    </div>
-  );
-}
-
-function Background7() {
-  return (
-    <div className="bg-white relative rounded-[8px] shrink-0 w-full" data-name="Background">
-      <div className="content-stretch flex gap-[16px] items-start p-[24px] relative size-full">
-        <Background8 />
-        <Container40 />
-      </div>
-    </div>
-  );
-}
-
-function Container32() {
-  return (
-    <div className="content-stretch flex flex-col gap-[4px] items-start relative shrink-0 w-full" data-name="Container">
-      <ActivityItem />
-      <Background5 />
-      <Background7 />
-    </div>
-  );
-}
-
-function ActivityFeedEditorialStyle() {
-  return (
-    <div className="col-[1/span_3] content-stretch flex flex-col gap-[24px] items-start justify-self-stretch pb-[238px] relative row-1 self-start shrink-0" data-name="Activity Feed (Editorial Style)">
-      <Container31 />
-      <Container32 />
+    <div className="col-[1/span_3] content-stretch flex flex-col gap-[24px] items-start justify-self-stretch pb-[32px] relative row-1 self-start shrink-0" data-name="Activity Feed (Editorial Style)">
+      <Container31 onNavigate={onNavigate} />
+      <Container32 atividades={atividades} />
     </div>
   );
 }
@@ -1053,9 +942,13 @@ function Container43() {
   );
 }
 
-function Button5() {
+function Button5({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-1 self-start shrink-0" data-name="Button">
+    <div 
+      className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-1 self-start shrink-0 cursor-pointer hover:bg-[#f8fafc] transition-colors" 
+      data-name="Button"
+      onClick={() => onNavigate?.("arenas")}
+    >
       <div aria-hidden className="absolute border border-[rgba(194,198,210,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[15.99px] items-center p-[21px] relative size-full">
@@ -1084,7 +977,7 @@ function Container47() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#051d30] text-[16px] whitespace-nowrap">
-        <p className="leading-[24px]">Cadastrar Usuário</p>
+        <p className="leading-[24px]">Gerenciar Equipes</p>
       </div>
     </div>
   );
@@ -1094,8 +987,7 @@ function Container48() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[12px] whitespace-nowrap">
-        <p className="leading-[16px] mb-0">Libere acesso para novos mentores ou</p>
-        <p className="leading-[16px]">juízes.</p>
+        <p className="leading-[16px] mb-0">Audite e aprove equipes e integrantes.</p>
       </div>
     </div>
   );
@@ -1112,9 +1004,13 @@ function Container46() {
   );
 }
 
-function Button6() {
+function Button6({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-2 self-start shrink-0" data-name="Button">
+    <div 
+      className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-2 self-start shrink-0 cursor-pointer hover:bg-[#f8fafc] transition-colors" 
+      data-name="Button"
+      onClick={() => onNavigate?.("times")}
+    >
       <div aria-hidden className="absolute border border-[rgba(194,198,210,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[15.99px] items-center p-[21px] relative size-full">
@@ -1143,7 +1039,7 @@ function Container50() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative shrink-0 text-[#051d30] text-[16px] whitespace-nowrap">
-        <p className="leading-[24px]">Importar Dados CSV</p>
+        <p className="leading-[24px]">Partidas & Chaveamento</p>
       </div>
     </div>
   );
@@ -1153,7 +1049,7 @@ function Container51() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[#424751] text-[12px] whitespace-nowrap">
-        <p className="leading-[16px]">Upload em massa de equipes e participantes.</p>
+        <p className="leading-[16px]">Acompanhe confrontos e chaveamento oficial.</p>
       </div>
     </div>
   );
@@ -1170,9 +1066,13 @@ function Container49() {
   );
 }
 
-function Button7() {
+function Button7({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
-    <div className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-3 self-start shrink-0" data-name="Button">
+    <div 
+      className="bg-white col-1 justify-self-stretch relative rounded-[8px] row-3 self-start shrink-0 cursor-pointer hover:bg-[#f8fafc] transition-colors" 
+      data-name="Button"
+      onClick={() => onNavigate?.("partidas")}
+    >
       <div aria-hidden className="absolute border border-[rgba(194,198,210,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex gap-[15.99px] items-center p-[21px] relative size-full">
@@ -1184,52 +1084,77 @@ function Button7() {
   );
 }
 
-function Container42() {
+function Container42({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
     <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(1,minmax(0,1fr))] grid-rows-[___98px_98px_90px] relative shrink-0 w-full" data-name="Container">
-      <Button5 />
-      <Button6 />
-      <Button7 />
+      <Button5 onNavigate={onNavigate} />
+      <Button6 onNavigate={onNavigate} />
+      <Button7 onNavigate={onNavigate} />
     </div>
   );
 }
 
-function TechnicalShortcutsGlassmorphism() {
+function TechnicalShortcutsGlassmorphism({ onNavigate }: { onNavigate?: (key: string) => void }) {
   return (
     <div className="col-[4/span_2] content-stretch flex flex-col gap-[24px] items-start justify-self-stretch relative row-1 self-start shrink-0" data-name="Technical Shortcuts (Glassmorphism)">
       <Heading5 />
-      <Container42 />
+      <Container42 onNavigate={onNavigate} />
     </div>
   );
 }
 
-function ActivityShortcutsAsymmetricSection() {
+function ActivityShortcutsAsymmetricSection({ atividades, onNavigate }: { atividades?: any[]; onNavigate?: (key: string) => void }) {
   return (
-    <div className="gap-x-[32px] gap-y-[32px] grid grid-cols-[repeat(5,minmax(0,1fr))] grid-rows-[_650px] relative shrink-0 w-full" data-name="Activity & Shortcuts Asymmetric Section">
-      <ActivityFeedEditorialStyle />
-      <TechnicalShortcutsGlassmorphism />
+    <div className="gap-x-[32px] gap-y-[32px] grid grid-cols-[repeat(5,minmax(0,1fr))] relative shrink-0 w-full" data-name="Activity & Shortcuts Asymmetric Section">
+      <ActivityFeedEditorialStyle atividades={atividades} onNavigate={onNavigate} />
+      <TechnicalShortcutsGlassmorphism onNavigate={onNavigate} />
     </div>
   );
 }
 
-function CanvasContent() {
+function CanvasContent({ stats, onNavigate }: { stats?: any; onNavigate?: (key: string) => void }) {
   return (
-    <div className="h-[1391px] relative shrink-0 w-full" data-name="Canvas Content">
-      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[32px] pt-[96px] px-[32px] relative size-full">
-        <HeroBentoHeader />
-        <RealTimeStatsRow />
-        <ActivityShortcutsAsymmetricSection />
+    <div className="min-h-screen relative shrink-0 w-full" data-name="Canvas Content">
+      <div className="content-stretch flex flex-col gap-[32px] items-start pb-[48px] pt-[96px] px-[32px] relative size-full">
+        <HeroBentoHeader torneioAtivo={stats?.torneioAtivo} onNavigate={onNavigate} />
+        <RealTimeStatsRow 
+          totalEquipes={stats?.totalEquipes} 
+          arenasAtivas={stats?.arenasAtivas} 
+          validacoesPendentes={stats?.validacoesPendentes} 
+        />
+        <ActivityShortcutsAsymmetricSection atividades={stats?.atividadesRecentes} onNavigate={onNavigate} />
       </div>
     </div>
   );
 }
 
-export default function DashboardDoTecnico() {
+export default function DashboardDoTecnico({ onLogout, onNavigate }: { onLogout?: () => void; onNavigate?: (key: string) => void }) {
+  const [stats, setStats] = useState<any>({
+    totalEquipes: 18,
+    arenasAtivas: 3,
+    validacoesPendentes: 18,
+    torneioAtivo: { nome: "Torneio Sumô 2026", status: "CHAVEAMENTO_PRONTO" },
+    atividadesRecentes: []
+  });
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/v1/adm/dashboard-stats", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.totalEquipes === "number") {
+          setStats(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch dashboard stats from API:", err);
+      });
+  }, []);
+
   return (
-    <div className="bg-[#f7f9ff] content-stretch flex flex-col items-start pl-[256px] relative size-full" data-name="Dashboard do Técnico">
-      <AsideSideNavigationBarHiddenOnMobile />
+    <div className="bg-[#f7f9ff] content-stretch flex flex-col items-start pl-[256px] relative min-h-screen w-full" data-name="Dashboard do Técnico">
+      <AsideSideNavigationBarHiddenOnMobile onLogout={onLogout} />
       <TopNavigationBar />
-      <CanvasContent />
+      <CanvasContent stats={stats} onNavigate={onNavigate} />
     </div>
   );
 }

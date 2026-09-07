@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import imgCyberBotsLogo from "@/imports/DashboardDoTecnico-2/c59b0854417cc2b0f31b4d09ac8d4857a88ed716.png";
 import imgTechKnightsLogo from "@/imports/DashboardDoTecnico-2/e18b7015cb02a1e04d542279e6514f25357d4adf.png";
 import imgMechEngLogo from "@/imports/DashboardDoTecnico-2/5d16b98e05035db093ea19ea95851a20eb1accdb.png";
@@ -739,7 +739,7 @@ function TeamList({
   onSelectTeam: (t: Team) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Todas as Categorias");
+  const [filter, setFilter] = useState("Categoria: Sumô");
 
   const pending = teams.filter((t) => t.status === "PENDENTE").length;
   const approved = teams.filter((t) => t.status === "APROVADO").length;
@@ -748,7 +748,7 @@ function TeamList({
     const matchSearch =
       t.fullName.toLowerCase().includes(search.toLowerCase()) ||
       t.teamId.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "Todas as Categorias" || t.status === filter;
+    const matchFilter = filter === "Categoria: Sumô" || filter === "Status: Todos" || filter === "Todas as Categorias" || t.status === filter;
     return matchSearch && matchFilter;
   });
 
@@ -757,8 +757,8 @@ function TeamList({
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[11px] font-semibold tracking-[2px] uppercase" style={{ color: "#8c4f00" }}>ADMINISTRAÇÃO TÉCNICA</p>
-          <h1 className="font-normal text-[36px] text-[#051d30] tracking-[-0.9px] mt-1">Análise de Inscrições</h1>
+          <p className="text-[11px] font-semibold tracking-[2px] uppercase" style={{ color: "#8c4f00" }}>ADMINISTRAÇÃO TÉCNICA • SUMÔ</p>
+          <h1 className="font-normal text-[36px] text-[#051d30] tracking-[-0.9px] mt-1">Análise de Inscrições - Sumô</h1>
         </div>
         <div className="flex items-center gap-2 mt-3">
           <span className="rounded-[2px] px-2 py-1 text-[10px] font-semibold tracking-[0.5px] uppercase" style={{ background: "#ffdcbf", color: "#2d1600" }}>
@@ -785,10 +785,11 @@ function TeamList({
           <select className="appearance-none bg-white rounded-[6px] px-4 pr-8 text-[13px] text-[#475569] outline-none cursor-pointer"
             style={{ border: "1px solid rgba(194,198,210,0.5)", height: 40 }}
             value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option>Todas as Categorias</option>
+            <option>Categoria: Sumô</option>
+            <option>Status: Todos</option>
+            <option>APROVADO</option>
             <option>PENDENTE</option>
             <option>AJUSTE NECESSÁRIO</option>
-            <option>APROVADO</option>
           </select>
           <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -881,26 +882,90 @@ export default function TeamsPage({
   onNavigate: (key: string) => void;
   onLogout: () => void;
 }) {
-  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>({ type: "list" });
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("http://localhost:3000/api/v1/Equipes", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        const mappedTeams = data.map((t: any) => ({
+          ...t,
+          id: t.id || t._id,
+          name: t.name || t.nome,
+          fullName: t.fullName || t.nome || t.name,
+          teamId: t.teamId || `#RA-2026-${(t.id || t._id).slice(-3)}`,
+          logo:
+            (t.name || t.nome) === "CyberBots"
+              ? imgCyberBotsLogo
+              : (t.name || t.nome) === "TechKnights"
+              ? imgTechKnightsLogo
+              : (t.name || t.nome) === "MechEng"
+              ? imgMechEngLogo
+              : undefined,
+          arenas: t.arenas || [],
+          members: (t.members || []).map((m: any) => ({
+            ...m,
+            id: m.id || m.cpf,
+          })),
+        }));
+        setTeams(mappedTeams);
+      })
+      .catch((err) => console.error("Error loading teams:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
 
   function navigate(key: string) {
     if (key === "times") setView({ type: "list" });
     else onNavigate(key);
   }
 
-  function updateTeam(updated: Team) {
-    setTeams((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  async function updateTeam(updated: Team) {
+    try {
+      await fetch(`http://localhost:3000/api/v1/Equipes/${updated.id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: updated.status }),
+        credentials: "include"
+      });
+      
+      for (const m of updated.members) {
+        await fetch(`http://localhost:3000/api/v1/Equipes/${updated.id}/membros/${m.cpf}/doc-status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ docStatus: m.docStatus }),
+          credentials: "include"
+        });
+      }
+      
+      setTeams((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    } catch (err) {
+      console.error("Error updating team status:", err);
+    }
   }
 
-  function updateMember(teamId: string, updated: Member) {
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? { ...t, members: t.members.map((m) => (m.id === updated.id ? updated : m)) }
-          : t
-      )
-    );
+  async function updateMember(teamId: string, updated: Member) {
+    try {
+      await fetch(`http://localhost:3000/api/v1/Equipes/${teamId}/membros/${updated.cpf}/doc-status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ docStatus: updated.docStatus, judgeNote: updated.judgeNote }),
+        credentials: "include"
+      });
+      
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === teamId
+            ? { ...t, members: t.members.map((m) => (m.id === updated.id ? updated : m)) }
+            : t
+        )
+      );
+    } catch (err) {
+      console.error("Error updating member doc status:", err);
+    }
   }
 
   const activeTeam = view.type !== "list" ? teams.find((t) => t.id === view.teamId) : null;
@@ -918,6 +983,10 @@ export default function TeamsPage({
             {view.type === "list" ? "Times" : view.type === "team" ? activeTeam?.fullName : activeMember?.name}
           </span>
           <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-['Inter:Bold',Inter,sans-serif] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              API ONLINE (MongoDB Atlas)
+            </span>
             <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#edf4ff] transition-colors">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </button>
@@ -930,8 +999,16 @@ export default function TeamsPage({
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
           {view.type === "list" && (
-            <TeamList teams={teams} onSelectTeam={(t) => setView({ type: "team", teamId: t.id })} />
+            loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-[#8c9ab0]">
+                <div className="w-10 h-10 border-3 border-[#00356a] border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[16px]">Carregando equipes do MongoDB Atlas...</p>
+              </div>
+            ) : (
+              <TeamList teams={teams} onSelectTeam={(t) => setView({ type: "team", teamId: t.id })} />
+            )
           )}
+
           {view.type === "team" && activeTeam && (
             <TeamProfile
               team={activeTeam}

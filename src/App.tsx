@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, type MouseEvent } from "react
 import svgPaths from "@/../imports/svg-sto6umt0ep";
 import LoginPage from "./LoginPage";
 import AdminDashboard from "./AdminDashboard";
+import DashboardDoTecnico from "./imports/DashboardDoTecnico-1/index";
 
 /* ─── Images ─────────────────────────────────────────────────────────── */
 const IMG_HERO =
@@ -619,12 +620,46 @@ function GlobalStyles() {
 /* ─── App ─────────────────────────────────────────────────────────────── */
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(() => {
+    const p = window.location.pathname.toLowerCase();
+    const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
+    return adminRoutes.some(r => p.startsWith(r));
+  });
+  const [showTecnico, setShowTecnico] = useState(false);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const p = window.location.pathname.toLowerCase();
+      const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
+      if (adminRoutes.some(r => p.startsWith(r))) {
+        setShowAdmin(true);
+      } else if (p === "/" || p === "") {
+        setShowAdmin(false);
+        setShowTecnico(false);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const openLogin = () => setShowLogin(true);
   const closeLogin = () => setShowLogin(false);
-  const openAdmin = () => { setShowLogin(false); setShowAdmin(true); };
-  const closeAdmin = () => setShowAdmin(false);
+  const openAdmin = () => {
+    setShowLogin(false);
+    setShowAdmin(true);
+    if (window.location.pathname === "/" || window.location.pathname === "") {
+      window.history.pushState(null, "", "/home");
+    }
+  };
+  const closeAdmin = () => {
+    setShowAdmin(false);
+    window.history.pushState(null, "", "/");
+  };
+  const openTecnico = () => { setShowLogin(false); setShowTecnico(true); };
+  const closeTecnico = () => {
+    setShowTecnico(false);
+    window.history.pushState(null, "", "/");
+  };
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-[#f7f9ff]">
@@ -638,8 +673,13 @@ export default function App() {
       </div>
       <ScrollTop />
       <ToastContainer />
-      {showLogin && <LoginPage onBack={closeLogin} onAdminLogin={openAdmin} />}
+      {showLogin && <LoginPage onBack={closeLogin} onAdminLogin={openAdmin} onStudentLogin={openTecnico} />}
       {showAdmin && <AdminDashboard onLogout={closeAdmin} />}
+      {showTecnico && (
+        <div className="fixed inset-0 z-[800] overflow-auto bg-[#f7f9ff]">
+          <DashboardDoTecnico onLogout={closeTecnico} />
+        </div>
+      )}
     </div>
   );
 }

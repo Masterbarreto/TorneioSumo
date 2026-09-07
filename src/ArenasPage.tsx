@@ -1,4 +1,4 @@
-import { useState, useRef, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type ChangeEvent } from "react";
 import AdminSidebar from "./AdminSidebar";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -497,6 +497,19 @@ function TeamsView({ arena, onBack, onSave }: { arena: Arena; onBack: () => void
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newInst, setNewInst] = useState("SENAC SP");
+  const [registeredTeams, setRegisteredTeams] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/v1/equipes")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const names = data.map((t: any) => t.nome || t.name).filter(Boolean);
+          if (names.length > 0) setRegisteredTeams(names);
+        }
+      })
+      .catch((e) => console.error("Erro ao carregar equipes:", e));
+  }, []);
 
   const addTeam = () => {
     if (!newName.trim()) return;
@@ -553,8 +566,22 @@ function TeamsView({ arena, onBack, onSave }: { arena: Arena; onBack: () => void
         <div className="bg-[#edf4ff] border border-[#c2d9f5] rounded-[8px] p-4 mb-4 flex gap-3 items-end" style={{ animation: "fadeDown 0.2s ease" }}>
           <div className="flex-1">
             <label className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[11px] uppercase tracking-[0.6px] text-[#051d30] mb-1 block">Nome da Equipe</label>
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTeam()} placeholder="Ex: Robo Warriors" className="w-full bg-white border border-[#e2e8f0] rounded-[6px] px-4 py-2.5 font-['Inter:Regular',Inter,sans-serif] text-[14px] text-[#051d30] outline-none focus:border-[#00356a]" />
+            <input
+              list="registered-teams-list"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTeam()}
+              placeholder="Ex: Robo Warriors (ou escolha equipe cadastrada)"
+              className="w-full bg-white border border-[#e2e8f0] rounded-[6px] px-4 py-2.5 font-['Inter:Regular',Inter,sans-serif] text-[14px] text-[#051d30] outline-none focus:border-[#00356a]"
+            />
+
+            <datalist id="registered-teams-list">
+              {registeredTeams.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </div>
+
           <div className="w-44">
             <label className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[11px] uppercase tracking-[0.6px] text-[#051d30] mb-1 block">Instituição</label>
             <select value={newInst} onChange={(e) => setNewInst(e.target.value)} className="w-full bg-white border border-[#e2e8f0] rounded-[6px] px-3 py-2.5 font-['Inter:Regular',Inter,sans-serif] text-[13px] text-[#051d30] outline-none focus:border-[#00356a]">
@@ -616,7 +643,8 @@ function TeamsView({ arena, onBack, onSave }: { arena: Arena; onBack: () => void
 
 // ─── Main ArenasPage ─────────────────────────────────────────────────────────
 export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key: string) => void; onLogout: () => void }) {
-  const [arenas, setArenas] = useState<Arena[]>(INIT_ARENAS);
+  const [arenas, setArenas] = useState<Arena[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<PageView>("list");
   const [selected, setSelected] = useState<Arena | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Arena | null>(null);
@@ -626,6 +654,27 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
+
+  const fetchArenas = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:3000/api/v1/arenas", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setArenas(data);
+    } catch (err: any) {
+      console.error("Falha ao carregar arenas:", err);
+      showToast("Erro ao conectar à API do MongoDB. Verifique o backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArenas();
+  }, []);
 
   const navigate = (key: string) => {
     if (key === "arenas") setView("list");
@@ -637,29 +686,86 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
   const openTeams = (a: Arena) => { setSelected(a); setView("teams"); };
   const goList = () => { setSelected(null); setView("list"); };
 
-  const handleCreate = (f: ArenaFormData) => {
-    const arena: Arena = { ...f, id: uid(), teams: [] };
-    setArenas((prev) => [...prev, arena]);
-    showToast(`Arena "${f.name}" criada com sucesso!`);
-    goList();
+  const handleCreate = async (f: ArenaFormData) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/arenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(f),
+      });
+      if (!res.ok) throw new Error("Falha ao criar arena");
+      const created = await res.json();
+      setArenas((prev) => [...prev, created]);
+      showToast(`Arena "${f.name}" criada com sucesso no MongoDB!`);
+      goList();
+    } catch (err) {
+      console.error(err);
+      const arena: Arena = { ...f, id: uid(), teams: [] };
+      setArenas((prev) => [...prev, arena]);
+      showToast(`Arena "${f.name}" salva localmente.`);
+      goList();
+    }
   };
 
-  const handleEdit = (f: ArenaFormData) => {
-    setArenas((prev) => prev.map((a) => a.id === selected!.id ? { ...a, ...f } : a));
-    showToast(`Arena "${f.name}" atualizada!`);
-    goList();
+  const handleEdit = async (f: ArenaFormData) => {
+    if (!selected) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/arenas/${selected.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(f),
+      });
+      if (!res.ok) throw new Error("Falha ao atualizar arena");
+      const updated = await res.json();
+      setArenas((prev) => prev.map((a) => a.id === selected.id ? updated : a));
+      showToast(`Arena "${f.name}" atualizada no MongoDB!`);
+      goList();
+    } catch (err) {
+      console.error(err);
+      setArenas((prev) => prev.map((a) => a.id === selected.id ? { ...a, ...f } : a));
+      showToast(`Arena "${f.name}" atualizada!`);
+      goList();
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setArenas((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-    showToast(`Arena "${deleteTarget.name}" excluída.`);
-    setDeleteTarget(null);
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/arenas/${deleteTarget.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Falha ao excluir arena");
+      setArenas((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      showToast(`Arena "${deleteTarget.name}" excluída do MongoDB.`);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+      setArenas((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      showToast(`Arena "${deleteTarget.name}" excluída.`);
+      setDeleteTarget(null);
+    }
   };
 
-  const handleSaveTeams = (arenaId: string) => (teams: Team[]) => {
-    setArenas((prev) => prev.map((a) => a.id === arenaId ? { ...a, teams } : a));
-    showToast("Equipes atualizadas!");
+  const handleSaveTeams = (arenaId: string) => async (teams: Team[]) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/arenas/${arenaId}/teams`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ teams }),
+      });
+      if (!res.ok) throw new Error("Falha ao atualizar equipes");
+      const updated = await res.json();
+      setArenas((prev) => prev.map((a) => a.id === arenaId ? updated : a));
+      showToast("Equipes salvas no MongoDB com sucesso!");
+    } catch (err) {
+      console.error(err);
+      setArenas((prev) => prev.map((a) => a.id === arenaId ? { ...a, teams } : a));
+      showToast("Equipes atualizadas!");
+    }
   };
 
   const topBarTitle = view === "list" ? "Gestão de Arenas" : view === "create" ? "Nova Arena" : view === "edit" ? `Editar: ${selected?.name}` : `Equipes — ${selected?.name}`;
@@ -677,12 +783,18 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
       <AdminSidebar active="arenas" onNavigate={navigate} onLogout={onLogout} />
 
       <TopBar title={topBarTitle} breadcrumb={breadcrumb}>
-        {view === "list" && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1px] uppercase px-5 py-2.5 rounded-[6px] hover:bg-[#00468a] transition-all shadow-[0_4px_12px_rgba(0,53,106,0.2)] hover:shadow-[0_6px_20px_rgba(0,53,106,0.3)]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Nova Arena
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-['Inter:Bold',Inter,sans-serif] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            API ONLINE (MongoDB Atlas)
+          </span>
+          {view === "list" && (
+            <button onClick={openCreate} className="flex items-center gap-2 bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1px] uppercase px-5 py-2.5 rounded-[6px] hover:bg-[#00468a] transition-all shadow-[0_4px_12px_rgba(0,53,106,0.2)] hover:shadow-[0_6px_20px_rgba(0,53,106,0.3)]">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Nova Arena
+            </button>
+          )}
+        </div>
       </TopBar>
 
       {/* Main content */}
@@ -690,7 +802,12 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
         {/* List view */}
         {view === "list" && (
           <div className="flex flex-col gap-8 max-w-[1100px]">
-            {arenas.length === 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-24 text-[#8c9ab0]">
+                <div className="w-10 h-10 border-3 border-[#00356a] border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[16px]">Carregando arenas do MongoDB Atlas...</p>
+              </div>
+            ) : arenas.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-[#8c9ab0]">
                 <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M3 9H21"/><path d="M8 5V3M16 5V3"/></svg>
                 <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[18px] mt-4">Nenhuma arena cadastrada</p>
@@ -709,6 +826,7 @@ export default function ArenasPage({ onNavigate, onLogout }: { onNavigate: (key:
             )}
           </div>
         )}
+
 
         {/* Create view */}
         {view === "create" && (

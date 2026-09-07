@@ -1,490 +1,1125 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
+import AdminSidebar from "./AdminSidebar";
+import { BracketMatch, SumoTournamentState } from "./ProjectionReceiver";
 
-type Category = {
+// ─── Interfaces & Types ───────────────────────────────────────────────────────
+
+export interface TeamMatch {
   id: string;
   name: string;
-  icon: string;
-  description: string;
-  tag: string;
-};
+  code: string;
+  robot: string;
+  colorCorner: "red" | "blue";
+  seed?: string;
+  score?: number;
+  status?: string;
+}
 
-type Team = {
+export interface MatchData {
   id: string;
-  name: string;
-  alias: string;
-  wins: number;
-  penalties: number;
-  score: string;
-  color: string;
-};
+  code: string; // e.g. MCH-001
+  phase: "OITAVAS" | "QUARTAS" | "SEMIFINAL" | "FINAL";
+  position?: number;
+  status: "PENDENTE" | "EM ANDAMENTO" | "CONCLUÍDO";
+  teamA: TeamMatch;
+  teamB: TeamMatch;
+  round1Winner?: "teamA" | "teamB" | "draw" | null;
+  round2Winner?: "teamA" | "teamB" | "draw" | null;
+  round3Winner?: "teamA" | "teamB" | "draw" | null;
+  round1Duration?: number | null;
+  round2Duration?: number | null;
+  round3Duration?: number | null;
+  currentRound?: number;
+  winnerId?: string | null;
+  released?: boolean;
+}
 
-const categories: Category[] = [
-  {
-    id: "sumo",
-    name: "Sumô",
-    icon: "⚙️",
-    description: "Combate de força e estratégia, com foco em empurrão e controle de centro do tatame.",
-    tag: "SUMÔ",
-  },
-  {
-    id: "drag",
-    name: "Drag Race",
-    icon: "🏁",
-    description: "Velocidade, aceleração e precisão em curvas e propulsion.",
-    tag: "DRAG",
-  },
-  {
-    id: "sprint",
-    name: "Sprint",
-    icon: "⚡",
-    description: "Desempenho em velocidade, estabilidade e reação.",
-    tag: "SPRINT",
-  },
-];
+// ─── Main AvaliacaoTorneio Component ──────────────────────────────────────────
 
-const allTeams: Team[] = [
-  { id: "t1", name: "Cyber-Bear", alias: "CB", wins: 12, penalties: 1, score: "#12", color: "#f59e0b" },
-  { id: "t2", name: "Nova-Prisme", alias: "NP", wins: 7, penalties: 2, score: "#07", color: "#f97316" },
-  { id: "t3", name: "Titan-X", alias: "TX", wins: 10, penalties: 0, score: "#10", color: "#3b82f6" },
-  { id: "t4", name: "Vold-Walker", alias: "VW", wins: 8, penalties: 3, score: "#08", color: "#60a5fa" },
-  { id: "t5", name: "Nova-Prime", alias: "NP", wins: 9, penalties: 2, score: "#09", color: "#a78bfa" },
-  { id: "t6", name: "AlphaBot", alias: "AB", wins: 11, penalties: 1, score: "#11", color: "#22c55e" },
-];
+export default function AvaliacaoTorneio({
+  onNavigate,
+  onLogout,
+}: {
+  onNavigate?: (key: string) => void;
+  onLogout?: () => void;
+}) {
+  // Step state: 1 = Arena Selection Hub, 2 = Gestão de Chaves e Sorteio, 3 = Robot Sumô Console
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-const shuffle = <T,>(items: T[]) => {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
+  // Backend / MongoDB Data
+  const [matches, setMatches] = useState<MatchData[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null);
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "PENDENTE" | "EM ANDAMENTO" | "CONCLUÍDO">("ALL");
+  const [activePhaseTab, setActivePhaseTab] = useState<"OITAVAS" | "QUARTAS" | "SEMIFINAL" | "FINAL">("OITAVAS");
+  const [loadingTeams, setLoadingTeams] = useState<boolean>(true);
 
-function Sidebar() {
+  // Step 3 (Evaluation Console) State
+  const [matchTimer, setMatchTimer] = useState<number>(120); // 2:00 in seconds
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [imobilizacaoTimer, setImobilizacaoTimer] = useState<number | null>(null);
+  const [isImobilizacaoRunning, setIsImobilizacaoRunning] = useState<boolean>(false);
+
+  // Rounds state for selected match
+  const [round1Winner, setRound1Winner] = useState<"teamA" | "teamB" | "draw" | null>(null);
+  const [round2Winner, setRound2Winner] = useState<"teamA" | "teamB" | "draw" | null>(null);
+  const [round3Winner, setRound3Winner] = useState<"teamA" | "teamB" | "draw" | null>(null);
+  const [round1Duration, setRound1Duration] = useState<number | null>(null);
+  const [round2Duration, setRound2Duration] = useState<number | null>(null);
+  const [round3Duration, setRound3Duration] = useState<number | null>(null);
+  const [currentRoundNumber, setCurrentRoundNumber] = useState<1 | 2 | 3>(1);
+  const [judgeObservations, setJudgeObservations] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 1. Fetch Real Matches from MongoDB Atlas API
+  const fetchMatchesFromApi = async () => {
+    setLoadingTeams(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/partidas");
+      if (res.ok) {
+        const rawList = await res.json();
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          const mapped: MatchData[] = rawList.map((m: any) => ({
+            id: m._id || m.code,
+            code: m.code,
+            phase: m.phase,
+            position: m.position,
+            status: m.status,
+            released: !!m.released,
+            winnerId: m.winnerId,
+            teamA: {
+              id: m.team1?.id || m.team1Id || `team1-${m.code}`,
+              name: m.team1?.name || "AGUARDANDO...",
+              code: m.team1?.code || `#TM-${m.code}-1`,
+              robot: m.team1?.robot || "Robô de Combate",
+              colorCorner: "red",
+              seed: m.team1?.seed || "A1",
+              score: m.team1?.score ?? 0,
+              status: "APROVADO",
+            },
+            teamB: {
+              id: m.team2?.id || m.team2Id || `team2-${m.code}`,
+              name: m.team2?.name || "AGUARDANDO...",
+              code: m.team2?.code || `#TM-${m.code}-2`,
+              robot: m.team2?.robot || "Robô de Combate",
+              colorCorner: "blue",
+              seed: m.team2?.seed || "B1",
+              score: m.team2?.score ?? 0,
+              status: "APROVADO",
+            },
+            round1Winner: m.rounds?.[0]?.winnerId === m.team1?.id ? "teamA" : m.rounds?.[0]?.winnerId === m.team2?.id ? "teamB" : m.rounds?.[0]?.winnerId === "draw" ? "draw" : null,
+            round2Winner: m.rounds?.[1]?.winnerId === m.team1?.id ? "teamA" : m.rounds?.[1]?.winnerId === m.team2?.id ? "teamB" : m.rounds?.[1]?.winnerId === "draw" ? "draw" : null,
+            round3Winner: m.rounds?.[2]?.winnerId === m.team1?.id ? "teamA" : m.rounds?.[2]?.winnerId === m.team2?.id ? "teamB" : m.rounds?.[2]?.winnerId === "draw" ? "draw" : null,
+            round1Duration: m.round1Duration ?? (m.rounds?.[0]?.duration || null),
+            round2Duration: m.round2Duration ?? (m.rounds?.[1]?.duration || null),
+            round3Duration: m.round3Duration ?? (m.rounds?.[2]?.duration || null),
+            currentRound: 1,
+          }));
+
+          setMatches(mapped);
+
+          // Select default match if none selected
+          if (!selectedMatch) {
+            const m3 = mapped.find((x) => x.code === "MCH-003");
+            setSelectedMatch(m3 || mapped[0]);
+          } else {
+            // Keep selected match synced with fresh data
+            const updated = mapped.find((x) => x.code === selectedMatch.code || x.id === selectedMatch.id);
+            if (updated) setSelectedMatch(updated);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao carregar partidas da API:", err);
+    } finally {
+      setLoadingTeams(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatchesFromApi();
+  }, []);
+
+  // Broadcast helper
+  const broadcastSync = () => {
+    try {
+      const ch = new BroadcastChannel("robotic_proj");
+      ch.postMessage({ matches, refresh: true });
+      setTimeout(() => ch.close(), 100);
+    } catch (e) {}
+  };
+
+  // Combat Timer 2:00 interval
+  useEffect(() => {
+    let interval: any = null;
+    if (isTimerRunning && matchTimer > 0) {
+      interval = setInterval(() => {
+        setMatchTimer((prev) => Math.max(0, prev - 1));
+      }, 1000);
+    } else if (matchTimer === 0 && isTimerRunning) {
+      setIsTimerRunning(false);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning, matchTimer]);
+
+  // 15-second Imobilização Timer
+  useEffect(() => {
+    let interval: any = null;
+    if (isImobilizacaoRunning && imobilizacaoTimer !== null && imobilizacaoTimer > 0) {
+      interval = setInterval(() => {
+        setImobilizacaoTimer((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    } else if (imobilizacaoTimer === 0 && isImobilizacaoRunning) {
+      setIsImobilizacaoRunning(false);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isImobilizacaoRunning, imobilizacaoTimer]);
+
+  // Format MM:SS
+  const formatTimer = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+
+  // Start 15s immobilization countdown
+  const handleStartImobilizacao = () => {
+    setImobilizacaoTimer(15);
+    setIsImobilizacaoRunning(true);
+  };
+
+  // 🔀 SORTEIO AUTOMÁTICO: Resets and shuffles in MongoDB Atlas!
+  const handleSorteioAutomatico = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/partidas/reset-sorteio", { method: "POST" });
+      if (res.ok) {
+        await fetchMatchesFromApi();
+        broadcastSync();
+        setToastMessage("Sorteio automático concluído com 100% das 16 equipes aprovadas no MongoDB Atlas!");
+        setTimeout(() => setToastMessage(null), 4000);
+      }
+    } catch (e: any) {
+      setToastMessage("Erro ao executar sorteio no servidor.");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  // Select match and enter evaluation console (Step 3)
+  const handleOpenEvaluation = (match: MatchData) => {
+    setSelectedMatch(match);
+    setRound1Winner(match.round1Winner || null);
+    setRound2Winner(match.round2Winner || null);
+    setRound3Winner(match.round3Winner || null);
+    setRound1Duration(match.round1Duration || null);
+    setRound2Duration(match.round2Duration || null);
+    setRound3Duration(match.round3Duration || null);
+    if (!match.round1Winner) {
+      setCurrentRoundNumber(1);
+    } else if (!match.round2Winner) {
+      setCurrentRoundNumber(2);
+    } else {
+      setCurrentRoundNumber(3);
+    }
+    setMatchTimer(120);
+    setIsTimerRunning(false);
+    setImobilizacaoTimer(null);
+    setIsImobilizacaoRunning(false);
+    setStep(3);
+  };
+
+  // Concluir Round 1: Salva o tempo do round 1 e ZERA o cronômetro para o Round 2
+  const handleSelectRound1Winner = (winner: "teamA" | "teamB" | "draw") => {
+    setRound1Winner(winner);
+    // Tempo decorrido no round 1 (máximo 120s)
+    const elapsed = Math.max(1, 120 - matchTimer);
+    setRound1Duration(elapsed);
+    // Para e ZERA o cronômetro para 02:00 (120s) para o Round 2
+    setIsTimerRunning(false);
+    setMatchTimer(120);
+    setCurrentRoundNumber(2);
+    setToastMessage(`Round 1 gravado (${formatTimer(elapsed)})! Cronômetro zerado para 02:00 (Round 2).`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Concluir Round 2: Salva o tempo do round 2 e ZERA o cronômetro para o Round 3
+  const handleSelectRound2Winner = (winner: "teamA" | "teamB" | "draw") => {
+    setRound2Winner(winner);
+    const elapsed = Math.max(1, 120 - matchTimer);
+    setRound2Duration(elapsed);
+    // Para e ZERA o cronômetro para 02:00 (120s) para o Round 3 (desempate)
+    setIsTimerRunning(false);
+    setMatchTimer(120);
+    setCurrentRoundNumber(3);
+    setToastMessage(`Round 2 gravado (${formatTimer(elapsed)})! Cronômetro zerado para 02:00 (Round 3).`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Concluir Round 3: Salva o tempo do round 3
+  const handleSelectRound3Winner = (winner: "teamA" | "teamB" | "draw") => {
+    setRound3Winner(winner);
+    const elapsed = Math.max(1, 120 - matchTimer);
+    setRound3Duration(elapsed);
+    setIsTimerRunning(false);
+    setToastMessage(`Round 3 gravado (${formatTimer(elapsed)})! Decisão pronta para confirmação.`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Confirm match result (Decisão Soberana) & save to MongoDB Atlas!
+  const handleConfirmResult = async () => {
+    if (!selectedMatch) return;
+    setIsSaving(true);
+    try {
+      let teamAWins = 0;
+      let teamBWins = 0;
+      if (round1Winner === "teamA") teamAWins++;
+      if (round1Winner === "teamB") teamBWins++;
+      if (round2Winner === "teamA") teamAWins++;
+      if (round2Winner === "teamB") teamBWins++;
+      if (round3Winner === "teamA") teamAWins++;
+      if (round3Winner === "teamB") teamBWins++;
+
+      const winningTeam = teamBWins > teamAWins ? "teamB" : "teamA";
+      const winnerId = winningTeam === "teamB" ? selectedMatch.teamB.id : selectedMatch.teamA.id;
+      const winnerName = winningTeam === "teamB" ? selectedMatch.teamB.name : selectedMatch.teamA.name;
+
+      // Real API POST to MongoDB com tempos de cada round!
+      const res = await fetch(`http://localhost:3000/api/v1/Rouds/partidas/${selectedMatch.code || selectedMatch.id}/rounds`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          winnerId,
+          round1Winner,
+          round2Winner,
+          round3Winner,
+          round1Duration: round1Duration || 60,
+          round2Duration: round2Duration || 60,
+          round3Duration: round3Duration || null,
+          duration: (round1Duration || 60) + (round2Duration || 60) + (round3Duration || 0),
+          team1ActiveDuration: 60,
+          team2ActiveDuration: 60,
+          isExtraRound: !!round3Winner,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro na gravação do round no servidor.");
+      }
+
+      await fetchMatchesFromApi();
+      broadcastSync();
+
+      setToastMessage(`Resultado confirmado! Vencedor da partida: ${winnerName} (promovido na chave).`);
+      setTimeout(() => {
+        setToastMessage(null);
+        setStep(2);
+      }, 2500);
+    } catch (e: any) {
+      alert("Erro ao confirmar resultado: " + e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Filtered matches for Step 2
+  const matchesInActivePhase = matches.filter((m) => m.phase === activePhaseTab);
+  const filteredMatches = matchesInActivePhase.filter((m) => {
+    if (activeFilter === "ALL") return true;
+    return m.status === activeFilter;
+  });
+
   return (
-    <aside className="w-[220px] shrink-0 border-r border-[#d8e5f3] bg-[#edf4ff] p-3 flex flex-col">
-      <div className="px-2 pb-4 pt-2">
-        <div className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[14px] tracking-[3px] uppercase text-[#00356a]">
-          ROBOTIC_SYNC
-        </div>
-      </div>
+    <div className="fixed inset-0 z-[800] overflow-y-auto bg-[#f8fafc] text-[#051d30] flex">
+      {/* Admin Sidebar */}
+      <AdminSidebar active="rules" onNavigate={onNavigate} onLogout={onLogout} />
 
-      <div className="mt-4 space-y-2">
-        <div className="px-2 text-[10px] uppercase tracking-[1.5px] text-[#6b7a8e] font-['Inter:Bold',Inter,sans-serif] font-bold">
-          Active team selector
-        </div>
-
-        <button className="flex w-full items-center justify-between rounded-md border border-[#dfeaf8] bg-white/80 px-3 py-2 text-left text-[12px] text-[#1e293b] shadow-sm">
-          <span className="font-['Inter:Regular',Inter,sans-serif]">AlphaBot</span>
-          <span className="text-[10px] text-[#64748b]">▾</span>
-        </button>
-
-        <nav className="mt-3 space-y-1">
-          {[
-            "Times",
-            "Participantes",
-            "Membros",
-            "Notas",
-            "Settings",
-          ].map((item, index) => (
+      {/* Main Content Area */}
+      <div className="flex-1 pl-[256px] flex flex-col min-h-screen">
+        {/* Top Header Bar / Stepper */}
+        <header className="h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-8 shrink-0">
+          {/* Stepper Navigation */}
+          <div className="flex items-center gap-2">
             <button
-              key={item}
-              className={`flex w-full items-center gap-3 rounded-[4px] px-[16px] py-[12px] text-left text-[13px] uppercase tracking-[0.7px] transition-all duration-150 hover:bg-white/50 ${
-                index === 0 ? "bg-white/70 text-[#1f2937]" : "text-[#475569]"
+              onClick={() => setStep(1)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[12px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+                step === 1
+                  ? "bg-[#00356a] text-white"
+                  : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#051d30]"
               }`}
             >
-              <svg width="18" height="19" viewBox="0 0 18 19" fill="none" aria-hidden="true" className="shrink-0">
-                <path d="M0 19V17H12V19H0ZM5.65 14.15L0 8.5L2.1 6.35L7.8 12L5.65 14.15ZM12 7.8L6.35 2.1L8.5 0L14.15 5.65L12 7.8ZM16.6 18L3.55 4.95L4.95 3.55L18 16.6L16.6 18Z" fill="currentColor" />
-              </svg>
-              <span className="font-['Inter:Regular',Inter,sans-serif]">{item}</span>
+              <span>1. Arena Hub</span>
             </button>
-          ))}
-        </nav>
-      </div>
 
-      <div className="mt-auto space-y-2 border-t border-[#d8e5f3] pt-3">
-        <button className="flex w-full items-center gap-2 rounded-[4px] px-3 py-2 text-[11px] uppercase tracking-[1px] text-[#475569] hover:bg-white/50">
-          <span>◌</span>
-          <span>Support</span>
-        </button>
-        <button className="flex w-full items-center gap-2 rounded-[4px] px-3 py-2 text-[11px] uppercase tracking-[1px] text-[#ef4444] hover:bg-white/50">
-          <span>↩</span>
-          <span>Logout</span>
-        </button>
-      </div>
-    </aside>
-  );
-}
+            <span className="text-[#cbd5e1] text-xs">›</span>
 
-function CategorySelectionScreen({
-  selectedCategory,
-  onSelectCategory,
-  onContinue,
-}: {
-  selectedCategory: Category;
-  onSelectCategory: (category: Category) => void;
-  onContinue: () => void;
-}) {
-  return (
-    <div className="flex-1 bg-[#edf4ff] p-6">
-      <div className="flex items-center justify-between pb-4">
-        <div className="flex items-center gap-3 text-[12px] uppercase tracking-[1.8px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-          <span>TOURNAMENT ACTIVE</span>
-          <span className="font-['Inter:Regular',Inter,sans-serif] text-[#00356a]">●</span>
-        </div>
-      </div>
+            <button
+              onClick={() => setStep(2)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[12px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+                step === 2
+                  ? "bg-[#00356a] text-white"
+                  : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#051d30]"
+              }`}
+            >
+              <span>2. Chaves & Confrontos</span>
+            </button>
 
-      <div className="rounded-[10px] bg-[#edf4ff] p-1">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[14px] uppercase tracking-[2px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-              Category: {selectedCategory.tag}
+            <span className="text-[#cbd5e1] text-xs">›</span>
+
+            <button
+              onClick={() => setStep(3)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[12px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+                step === 3
+                  ? "bg-[#00356a] text-white"
+                  : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#051d30]"
+              }`}
+            >
+              <span>3. Robot Sumô (Avaliação)</span>
+            </button>
+          </div>
+
+          {/* Right Status & Icons */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[#059669] bg-[#ecfdf5] border border-[#a7f3d0] px-3 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+              <span>16 EQUIPES NO MONGODB ATLAS</span>
             </div>
-            <h1 className="mt-2 text-[42px] font-black leading-none tracking-[-1.6px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
+          </div>
+        </header>
+
+        {/* ─── Notification Toast ────────────────────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed top-20 right-8 z-[999] bg-[#051d30] text-white px-6 py-4 rounded-[6px] shadow-2xl border-l-4 border-[#00e5ff] flex items-center gap-3 animate-bounce">
+            <span className="text-xl">🏆</span>
+            <div>
+              <div className="font-bold text-[14px]">{toastMessage}</div>
+              <div className="text-[12px] text-[#94a3b8]">Sincronizado em tempo real com MongoDB Atlas</div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SCREEN 1: Arena Selection Hub
+        ══════════════════════════════════════════════════════════════════ */}
+        {step === 1 && (
+          <div className="p-8 max-w-7xl w-full mx-auto animate-fadeIn">
+            <div className="inline-flex items-center gap-2 bg-[#0f172a] text-[#f8fafc] px-3 py-1 rounded-[4px] text-[11px] font-mono tracking-[1.5px] uppercase mb-4">
+              <span>TOURNAMENT ACTIVE</span>
+              <span className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+            </div>
+
+            <h1 className="text-[40px] font-['Space_Grotesk'] font-bold text-[#051d30] leading-tight tracking-[-1px]">
               Arena Selection Hub
             </h1>
-            <p className="mt-3 max-w-[760px] text-[16px] text-[#475569] font-['Inter:Regular',Inter,sans-serif]">
-              Selecione a categoria para inicializar a avaliação do tournament. Insira a arena correta antes de verificar o confronto.
+
+            <p className="text-[#64748b] text-[15px] mt-2 max-w-3xl leading-relaxed">
+              Selecione a arena de combate de Sumô para inicializar o console de avaliação de confrontos oficiais.
             </p>
-          </div>
-        </div>
 
-        <div className="mt-8 rounded-[16px] border border-[#d8e5f3] bg-[#dfeeff] p-5">
-          <div className="mb-4 text-[14px] font-bold uppercase tracking-[1.5px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-            Seleção de categoria
-          </div>
+            <div className="mt-8">
+              <div className="flex items-center gap-2 text-[15px] font-bold text-[#051d30] uppercase tracking-wider mb-4">
+                <span>🎮</span>
+                <span>Seleção de Arenas</span>
+              </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {categories.map((category) => {
-              const active = selectedCategory.id === category.id;
-              return (
+              <div className="bg-[#f0f5ff] rounded-[16px] p-6 border border-[#e2e8f0]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div
+                    onClick={() => setStep(2)}
+                    className="bg-white rounded-[12px] p-6 border-2 border-[#3b82f6] shadow-md hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+                  >
+                    <div className="w-12 h-12 rounded-[10px] bg-[#eff6ff] flex items-center justify-center text-[24px] mb-4 text-[#2563eb]">
+                      🤖
+                    </div>
+
+                    <div className="text-[20px] font-['Space_Grotesk'] font-bold text-[#051d30] group-hover:text-[#2563eb] transition-colors">
+                      Sumô 3kg (Oficial)
+                    </div>
+
+                    <p className="text-[13px] text-[#64748b] mt-1 line-clamp-2">
+                      Combate técnico de força e estratégia de sensores em Dohyo oficial.
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-[#f1f5f9] flex items-center justify-between">
+                      <span className="font-mono text-[11px] font-bold text-[#051d30] tracking-wider">
+                        EQUIPES: 16
+                      </span>
+                      <span className="text-[12px] font-bold text-[#2563eb] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        Acessar Chaves →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SCREEN 2: Gestão de Chaves e Sorteio (media_1788746775922.png)
+        ══════════════════════════════════════════════════════════════════ */}
+        {step === 2 && (
+          <div className="p-8 max-w-7xl w-full mx-auto animate-fadeIn">
+            {/* Header with Title & Sorteio Automático Button */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-[36px] font-['Space_Grotesk'] font-bold text-[#051d30] leading-tight">
+                  Gestão de Chaves e Sorteio
+                </h1>
+                <p className="text-[#64748b] text-[14px] mt-1">
+                  Organize os confrontos e gerencie o fluxo das competições de forma automatizada.
+                </p>
+              </div>
+
+              {/* Cyan Action Button: Sorteio Automático */}
+              <button
+                onClick={handleSorteioAutomatico}
+                className="bg-[#00e5ff] hover:bg-[#00f2ff] text-[#00356a] px-6 py-3 rounded-[4px] font-['Space_Grotesk'] font-bold text-[12px] tracking-[1.2px] uppercase shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 self-start md:self-auto cursor-pointer"
+              >
+                <span>🔀</span>
+                <span>SORTEIO AUTOMÁTICO</span>
+              </button>
+            </div>
+
+            {/* Filter Bar (White container) */}
+            <div className="mt-6 bg-white rounded-[8px] border border-[#e2e8f0] px-5 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+              {/* Phase Tabs */}
+              <div className="flex items-center gap-2">
+                {[
+                  { key: "OITAVAS", label: "OITAVAS DE FINAL (8)" },
+                  { key: "QUARTAS", label: "QUARTAS (4)" },
+                  { key: "SEMIFINAL", label: "SEMIFINAIS (2)" },
+                  { key: "FINAL", label: "GRANDE FINAL (1)" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActivePhaseTab(tab.key as any)}
+                    className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                      activePhaseTab === tab.key
+                        ? "bg-[#00356a] text-white shadow-sm"
+                        : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#051d30]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-2">
                 <button
-                  key={category.id}
-                  onClick={() => onSelectCategory(category)}
-                  className={`rounded-[14px] border p-4 text-left transition-all duration-200 ${
-                    active
-                      ? "border-[#00356a] bg-white shadow-[0_8px_22px_rgba(0,53,106,0.08)]"
-                      : "border-[#d8e5f3] bg-[#f3f8ff] hover:border-[#7aa2d8]"
+                  onClick={() => setActiveFilter("PENDENTE")}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                    activeFilter === "PENDENTE"
+                      ? "border border-[#10b981] text-[#059669] bg-[#ecfdf5]"
+                      : "text-[#64748b] hover:text-[#051d30]"
                   }`}
                 >
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#d7e8ff] text-[22px]">
-                    {category.icon}
-                  </div>
-                  <div className="text-[18px] font-black text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-                    {category.name}
-                  </div>
-                  <p className="mt-2 text-[13px] leading-relaxed text-[#475569] font-['Inter:Regular',Inter,sans-serif]">
-                    {category.description}
-                  </p>
+                  PENDENTE
                 </button>
-              );
-            })}
-          </div>
+                <button
+                  onClick={() => setActiveFilter("EM ANDAMENTO")}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                    activeFilter === "EM ANDAMENTO"
+                      ? "border border-[#00e5ff] text-[#00356a] bg-[#e6fffa]"
+                      : "text-[#64748b] hover:text-[#051d30]"
+                  }`}
+                >
+                  EM ANDAMENTO
+                </button>
+                <button
+                  onClick={() => setActiveFilter("CONCLUÍDO")}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                    activeFilter === "CONCLUÍDO"
+                      ? "border border-[#64748b] text-[#334155] bg-[#f1f5f9]"
+                      : "text-[#64748b] hover:text-[#051d30]"
+                  }`}
+                >
+                  CONCLUÍDO
+                </button>
+                <button
+                  onClick={() => setActiveFilter("ALL")}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                    activeFilter === "ALL"
+                      ? "border border-[#3b82f6] text-[#1d4ed8] bg-[#eff6ff]"
+                      : "text-[#64748b] hover:text-[#051d30]"
+                  }`}
+                >
+                  TODAS
+                </button>
+              </div>
+            </div>
 
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={onContinue}
-              className="rounded-[8px] bg-[#00356a] px-6 py-3 text-[12px] font-bold uppercase tracking-[1.5px] text-white shadow-[0_6px_18px_rgba(0,53,106,0.25)] transition-all hover:bg-[#00468a]"
-            >
-              Continuar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TeamSelectionScreen({
-  selectedCategory,
-  teams,
-  onSortear,
-  onSelectMatch,
-  onContinue,
-}: {
-  selectedCategory: Category;
-  teams: Team[];
-  onSortear: () => void;
-  onSelectMatch: (index: number) => void;
-  onContinue: () => void;
-}) {
-  const pairs = useMemo(() => {
-    const ordered = [...teams];
-    const result: Team[][] = [];
-    for (let i = 0; i < ordered.length; i += 2) {
-      if (i + 1 < ordered.length) {
-        result.push([ordered[i], ordered[i + 1]]);
-      }
-    }
-    return result;
-  }, [teams]);
-
-  return (
-    <div className="flex-1 bg-[#edf4ff] p-6">
-      <div className="flex items-center justify-between gap-3 pb-4">
-        <div>
-          <div className="text-[12px] uppercase tracking-[2px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-            {selectedCategory.tag}
-          </div>
-          <h1 className="mt-2 text-[42px] font-black leading-none tracking-[-1.6px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-            Seleção de Times
-          </h1>
-        </div>
-
-        <button
-          onClick={onSortear}
-          className="rounded-[8px] bg-[#00356a] px-5 py-3 text-[11px] font-bold uppercase tracking-[1.4px] text-white shadow-[0_6px_18px_rgba(0,53,106,0.2)] transition-all hover:bg-[#00468a]"
-        >
-          Sortear times
-        </button>
-      </div>
-
-      <div className="rounded-[16px] border border-[#d8e5f3] bg-[#dfeeff] p-5">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="text-[14px] font-bold uppercase tracking-[1.5px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-            Confrontos
-          </div>
-          <button
-            onClick={onContinue}
-            className="rounded-[8px] border border-[#00356a] bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-[#00356a] transition-all hover:bg-[#edf4ff]"
-          >
-            Avaliar duelo
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {pairs.map(([a, b], index) => (
-            <button
-              key={`${a.id}-${b.id}`}
-              onClick={() => onSelectMatch(index)}
-              className="flex w-full items-center justify-between rounded-[12px] border border-[#d8e5f3] bg-white px-4 py-3 text-left shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-all hover:border-[#7aa2d8] hover:bg-[#f7fbff]"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-black text-white shadow-sm" style={{ background: a.color }}>
-                  {a.alias}
+            {/* Section: Sumô - Chave Oficial */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-[16px] font-bold text-[#051d30]">
+                  <span>🦾</span>
+                  <span>
+                    Sumô -{" "}
+                    {activePhaseTab === "OITAVAS"
+                      ? "Oitavas de Final"
+                      : activePhaseTab === "QUARTAS"
+                      ? "Quartas de Final"
+                      : activePhaseTab === "SEMIFINAL"
+                      ? "Semifinais"
+                      : "Grande Final"}
+                  </span>
                 </div>
+                <span className="text-[11px] font-mono font-bold text-[#64748b] tracking-wider uppercase bg-white border border-[#e2e8f0] px-3 py-1 rounded-full">
+                  {filteredMatches.length} CONFRONTOS
+                </span>
+              </div>
+
+              {/* Match Cards Grid */}
+              {loadingTeams ? (
+                <div className="flex flex-col items-center justify-center py-16 text-[#64748b]">
+                  <div className="w-8 h-8 border-2 border-[#00356a] border-t-transparent rounded-full animate-spin mb-3" />
+                  <p className="font-bold text-[14px]">Carregando confrontos reais do MongoDB Atlas...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {filteredMatches.map((m) => {
+                    const isInProgress = m.status === "EM ANDAMENTO";
+                    const isDone = m.status === "CONCLUÍDO";
+
+                    return (
+                      <div
+                        key={m.id || m.code}
+                        className={`bg-white rounded-[12px] p-6 transition-all relative flex flex-col justify-between ${
+                          isInProgress
+                            ? "border-2 border-[#00f2ff] shadow-[0_4px_20px_rgba(0,242,255,0.15)]"
+                            : isDone
+                            ? "border-2 border-emerald-300 shadow-sm"
+                            : "border border-[#e2e8f0] shadow-sm hover:border-[#94a3b8]"
+                        }`}
+                      >
+                        {/* Match Header */}
+                        <div className="flex items-center justify-between pb-4 border-b border-[#f1f5f9]">
+                          <span
+                            className={`font-mono text-[13px] font-bold ${
+                              isInProgress ? "text-[#0891b2]" : "text-[#64748b]"
+                            }`}
+                          >
+                            {m.code}
+                          </span>
+
+                          <span
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                              isInProgress
+                                ? "bg-[#e6fffa] text-[#0d9488]"
+                                : isDone
+                                ? "bg-[#dcfce7] text-[#15803d]"
+                                : "bg-[#f1f5f9] text-[#475569]"
+                            }`}
+                          >
+                            {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-ping" />}
+                            {m.status}
+                          </span>
+                        </div>
+
+                        {/* Match Teams Confrontation Layout */}
+                        <div className="py-6 flex flex-col items-center gap-3">
+                          {/* Team A */}
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="w-9 h-9 rounded-full bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center font-mono text-[11px] font-bold text-[#334155] shrink-0">
+                              {m.teamA.seed || "A1"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-['Space_Grotesk'] font-bold text-[15px] text-[#051d30] truncate">
+                                {m.teamA.name}
+                              </div>
+                              <div className="text-[12px] font-mono text-[#94a3b8]">
+                                {m.teamA.code}
+                              </div>
+                            </div>
+                            {isDone && (
+                              <span className="font-mono font-bold text-[16px] text-[#051d30]">
+                                {m.teamA.score}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* VS Pill */}
+                          <div className="flex items-center justify-center my-1">
+                            <span className="text-[11px] font-mono font-bold text-[#94a3b8] uppercase tracking-widest bg-[#f8fafc] px-3 py-0.5 rounded-full border border-[#e2e8f0]">
+                              vs
+                            </span>
+                          </div>
+
+                          {/* Team B */}
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="w-9 h-9 rounded-full bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center font-mono text-[11px] font-bold text-[#334155] shrink-0">
+                              {m.teamB.seed || "B4"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-['Space_Grotesk'] font-bold text-[15px] text-[#051d30] truncate">
+                                {m.teamB.name}
+                              </div>
+                              <div className="text-[12px] font-mono text-[#94a3b8]">
+                                {m.teamB.code}
+                              </div>
+                            </div>
+                            {isDone && (
+                              <span className="font-mono font-bold text-[16px] text-[#051d30]">
+                                {m.teamB.score}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom Button matching screenshot */}
+                        <div className="pt-4 border-t border-[#f1f5f9]">
+                          {isInProgress ? (
+                            <button
+                              onClick={() => handleOpenEvaluation(m)}
+                              className="w-full bg-[#005f73] hover:bg-[#0a6677] text-white py-2.5 rounded-[4px] font-['Space_Grotesk'] font-bold text-[11px] tracking-[1.2px] uppercase transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                            >
+                              <span>👁</span>
+                              <span>ACOMPANHAR AVALIAÇÃO</span>
+                            </button>
+                          ) : isDone ? (
+                            <button
+                              onClick={() => handleOpenEvaluation(m)}
+                              className="w-full bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#065f46] border border-emerald-300 py-2.5 rounded-[4px] font-['Space_Grotesk'] font-bold text-[11px] tracking-[1.2px] uppercase transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <span>✓</span>
+                              <span>REAVALIAR CONFRONTO</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenEvaluation(m)}
+                              className="w-full border border-[#0891b2] text-[#0891b2] hover:bg-[#ecfeff] py-2.5 rounded-[4px] font-['Space_Grotesk'] font-bold text-[11px] tracking-[1.2px] uppercase transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <span>▶</span>
+                              <span>INICIAR AVALIAÇÃO</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Bottom Info note */}
+              <div className="mt-8 flex items-center justify-center gap-2 text-[#64748b] text-[13px]">
+                <span>ℹ</span>
+                <span>Mais chaves serão geradas conforme a progressão do torneio no MongoDB Atlas.</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SCREEN 3: Robot Sumô - Evaluation Console (media_1788746800673.png)
+        ══════════════════════════════════════════════════════════════════ */}
+        {step === 3 && selectedMatch && (
+          <div className="p-8 max-w-7xl w-full mx-auto animate-fadeIn">
+            {/* Top Category Tag */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#b45309] uppercase tracking-[1.5px]">
+                CATEGORY: HEAVYWEIGHT • SUMÔ ({selectedMatch.code} - {selectedMatch.phase})
+              </span>
+              <button
+                onClick={() => setStep(2)}
+                className="text-[12px] font-bold text-[#00356a] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>←</span>
+                <span>Voltar às Chaves</span>
+              </button>
+            </div>
+
+            {/* Title & Subtitle */}
+            <h1 className="text-[42px] font-['Space_Grotesk'] font-bold text-[#051d30] leading-none mt-2 tracking-[-1.5px]">
+              Robot Sumô
+            </h1>
+            <p className="text-[#64748b] text-[14px] mt-2 max-w-2xl">
+              Console oficial de arbitragem conectado ao MongoDB Atlas. Registre os rounds, cronometre o combate e confirme a decisão soberana.
+            </p>
+
+            {/* ─── Top 3 Summary Cards Row (Red Corner | Timer | Blue Corner) ─ */}
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Card 1: Canto Vermelho */}
+              <div className="bg-[#fff5f5] rounded-[16px] p-6 border border-[#fee2e2] flex flex-col justify-between shadow-sm">
                 <div>
-                  <div className="text-[12px] uppercase tracking-[1.2px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-                    Team A
+                  <span className="inline-block bg-[#ffe4e6] text-[#e11d48] px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                    Canto Vermelho
+                  </span>
+                  <div className="text-[26px] font-['Space_Grotesk'] font-bold text-[#051d30] mt-4">
+                    {selectedMatch.teamA.name}
                   </div>
-                  <div className="text-[20px] font-black tracking-[-0.8px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-                    {a.name}
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-3 text-[24px] font-bold text-[#94a3b8]">VS</div>
-
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="text-right text-[12px] uppercase tracking-[1.2px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-                    Team B
-                  </div>
-                  <div className="text-right text-[20px] font-black tracking-[-0.8px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-                    {b.name}
+                  <div className="text-[#64748b] text-[13px] mt-1">
+                    {selectedMatch.teamA.robot}
                   </div>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-black text-white shadow-sm" style={{ background: b.color }}>
-                  {b.alias}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function EvaluationScreen({
-  category,
-  matchup,
-  onBack,
-}: {
-  category: Category;
-  matchup: [Team, Team];
-  onBack: () => void;
-}) {
-  const [judgeNote, setJudgeNote] = useState(" ");
-  const [timer, setTimer] = useState(14 * 60 + 42);
-
-  const mm = String(Math.floor(timer / 60)).padStart(2, "0");
-  const ss = String(timer % 60).padStart(2, "0");
-
-  return (
-    <div className="flex-1 bg-[#edf4ff] p-6">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-[12px] uppercase tracking-[2px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif] font-bold">
-            {category.tag}
-          </div>
-          <h1 className="mt-2 text-[42px] font-black leading-none tracking-[-1.6px] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-            {category.name}
-          </h1>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={onBack}
-            className="rounded-[8px] border border-[#d8e5f3] bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[1.2px] text-[#00356a] hover:bg-[#f8fbff]"
-          >
-            Voltar
-          </button>
-          <button className="rounded-[8px] bg-[#00356a] px-5 py-3 text-[11px] font-bold uppercase tracking-[1.2px] text-white shadow-[0_6px_18px_rgba(0,53,106,0.2)] hover:bg-[#00468a]">
-            Gerar confrontos
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1.7fr_0.9fr]">
-        <div className="space-y-6">
-          <div className="rounded-[18px] bg-[#0f3d78] p-6 shadow-[0_10px_25px_rgba(0,53,106,0.22)]">
-            <div className="mb-5 flex items-center justify-between text-[11px] uppercase tracking-[1.8px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif] font-bold">
-              <span>Combat time</span>
-              <span>Live</span>
-            </div>
-
-            <div className="flex items-center justify-center gap-6">
-              <div className="text-center text-white">
-                <div className="text-[11px] uppercase tracking-[1.4px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif] font-bold">
-                  {matchup[0].name}
-                </div>
-                <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full font-black" style={{ background: matchup[0].color }}>
-                  {matchup[0].alias}
+                <div className="mt-6 pt-4 border-t border-[#fecdd3] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-[#991b1b] uppercase tracking-wider">
+                    Semente: {selectedMatch.teamA.seed || "A1"}
+                  </span>
+                  <span className="text-[11px] font-bold text-[#e11d48]">
+                    {selectedMatch.teamA.code}
+                  </span>
                 </div>
               </div>
 
-              <div className="text-center text-[72px] font-black leading-none tracking-[-4px] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-                {mm}:{ss}
-              </div>
-
-              <div className="text-center text-white">
-                <div className="text-[11px] uppercase tracking-[1.4px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif] font-bold">
-                  {matchup[1].name}
-                </div>
-                <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full font-black" style={{ background: matchup[1].color }}>
-                  {matchup[1].alias}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-between text-[10px] uppercase tracking-[1.2px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif] font-bold">
-              <span>Início</span>
-              <span>Tempo</span>
-              <span>Finais</span>
-            </div>
-          </div>
-
-          <div className="rounded-[18px] border border-[#d8e5f3] bg-white p-4">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[1.5px] text-[#64748b] font-['Inter:Bold',Inter,sans-serif]">
-              Observações do juiz
-            </div>
-            <textarea
-              value={judgeNote}
-              onChange={(event) => setJudgeNote(event.target.value)}
-              placeholder="Insira observações técnicas, penalidades e critérios da avaliação."
-              className="h-[120px] w-full resize-none rounded-[10px] border border-[#d8e5f3] bg-[#f8fbff] p-3 text-[14px] text-[#1e293b] outline-none placeholder:text-[#94a3b8]"
-            />
-          </div>
-        </div>
-
-        <div className="rounded-[18px] bg-[#0d2f5e] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)]">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[1.6px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif]">
-            Avaliação
-          </div>
-
-          <div className="space-y-3">
-            {[matchup[0], matchup[1]].map((team, idx) => (
-              <div key={team.id} className="rounded-[12px] border border-white/10 bg-[#163d6c] p-3">
-                <div className="mb-2 flex items-center justify-between">
+              {/* Card 2: Tempo de Combate (Dark Navy Digital Timer) */}
+              <div className="bg-[#081b2e] rounded-[16px] p-6 text-white flex flex-col justify-between relative shadow-xl overflow-hidden">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: team.color }}>
-                      {team.alias}
-                    </div>
-                    <div className="text-[18px] font-black tracking-[-0.7px] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif]">
-                      {team.name}
-                    </div>
+                    <span className="text-[11px] font-bold text-[#93c5fd] tracking-[2px] uppercase">
+                      TEMPO DE COMBATE
+                    </span>
+                    <span className="bg-[#0c2a4d] border border-[#00f2ff]/40 text-[#00f2ff] px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider">
+                      ROUND {currentRoundNumber}
+                    </span>
                   </div>
-                  <div className="text-[12px] font-bold uppercase tracking-[1px] text-[#fbbf24]">
-                    {idx === 0 ? "Winner" : "Penalty"}
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isTimerRunning ? "bg-[#4ade80] animate-pulse" : "bg-slate-500"
+                      }`}
+                    />
+                    <span className={isTimerRunning ? "text-[#4ade80]" : "text-slate-400"}>
+                      {isTimerRunning ? "LIVE" : "PAUSADO"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-[8px] bg-[#1f4d81] px-2 py-2 text-center text-[10px] uppercase tracking-[1px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif]">
-                    Pontos
-                    <div className="mt-1 text-[20px] font-black text-white">{team.wins}</div>
+                {/* Digital Timer (Glowing Cyan) */}
+                <div className="text-center py-2">
+                  <div className="text-[58px] font-['Space_Grotesk'] font-black text-[#00f2ff] tracking-wider leading-none select-none drop-shadow-[0_0_15px_rgba(0,242,255,0.4)]">
+                    {formatTimer(matchTimer)}
                   </div>
-                  <div className="rounded-[8px] bg-[#1f4d81] px-2 py-2 text-center text-[10px] uppercase tracking-[1px] text-[#dbeafe] font-['Inter:Bold',Inter,sans-serif]">
-                    Penalidade
-                    <div className="mt-1 text-[20px] font-black text-white">{team.penalties}</div>
+                </div>
+
+                {/* 3 Circular Controls */}
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  <button
+                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    title={isTimerRunning ? "Pausar Combate" : "Iniciar Combate"}
+                    className="w-12 h-12 rounded-full bg-[#00f2ff] hover:bg-[#38bdf8] text-[#00356a] flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    {isTimerRunning ? "⏸" : "▶"}
+                  </button>
+
+                  <button
+                    onClick={() => setIsTimerRunning(false)}
+                    title="Pausar"
+                    className="w-12 h-12 rounded-full bg-[#1e293b] hover:bg-[#334155] text-white flex items-center justify-center text-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    ⏸
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsTimerRunning(false);
+                      setMatchTimer(120);
+                    }}
+                    title="Reiniciar Tempo (2:00)"
+                    className="w-12 h-12 rounded-full bg-[#1e293b] hover:bg-[#334155] text-white flex items-center justify-center text-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    ↻
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Canto Azul */}
+              <div className="bg-[#f0f7ff] rounded-[16px] p-6 border border-[#e0f2fe] flex flex-col justify-between shadow-sm">
+                <div>
+                  <span className="inline-block bg-[#e0f2fe] text-[#0284c7] px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                    Canto Azul
+                  </span>
+                  <div className="text-[26px] font-['Space_Grotesk'] font-bold text-[#051d30] mt-4">
+                    {selectedMatch.teamB.name}
+                  </div>
+                  <div className="text-[#64748b] text-[13px] mt-1">
+                    {selectedMatch.teamB.robot}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[#bae6fd] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-[#0369a1] uppercase tracking-wider">
+                    Semente: {selectedMatch.teamB.seed || "B4"}
+                  </span>
+                  <span className="text-[11px] font-bold text-[#0284c7]">
+                    {selectedMatch.teamB.code}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Middle Section (Left 65% Registro de Rounds | Right 35% Imobilização & Decisão) ─ */}
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-6 items-start">
+              {/* Left Column: Registro de Rounds */}
+              <div className="bg-white rounded-[16px] border border-[#e2e8f0] p-6 shadow-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-[#f1f5f9]">
+                  <h2 className="text-[18px] font-['Space_Grotesk'] font-bold text-[#051d30]">
+                    Registro de Rounds
+                  </h2>
+                  <span className="bg-[#f1f5f9] text-[#64748b] px-3 py-1 rounded-full text-[11px] font-bold">
+                    Melhor de 3
+                  </span>
+                </div>
+
+                {/* Rows for Round 1, Round 2, Round 3 */}
+                <div className="divide-y divide-[#f1f5f9]">
+                  {/* Round 1 */}
+                  <div className={`py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    currentRoundNumber === 1 && !round1Winner ? "bg-[#f8fafc] px-3 rounded-[8px]" : ""
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 ${
+                        round1Winner ? "bg-[#059669] text-white" : currentRoundNumber === 1 ? "bg-[#0284c7] text-white ring-2 ring-[#0284c7]/30" : "bg-[#cbd5e1] text-[#334155]"
+                      }`}>
+                        1
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[15px] text-[#051d30]">Round 1</span>
+                        {round1Duration !== null && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#ecfeff] text-[#0891b2] border border-[#a5f3fc] text-[11px] font-mono font-bold">
+                            ⏱ {formatTimer(round1Duration)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSelectRound1Winner("teamA")}
+                        className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                          round1Winner === "teamA"
+                            ? "bg-[#ef4444] text-white shadow"
+                            : "border border-[#ef4444] text-[#ef4444] hover:bg-[#fef2f2]"
+                        }`}
+                      >
+                        {selectedMatch.teamA.name.split(" ")[0]} (V)
+                      </button>
+
+                      <button
+                        onClick={() => handleSelectRound1Winner("teamB")}
+                        className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                          round1Winner === "teamB"
+                            ? "bg-[#0891b2] text-white shadow"
+                            : "border border-[#0891b2] text-[#0891b2] hover:bg-[#ecfeff]"
+                        }`}
+                      >
+                        {selectedMatch.teamB.name.split(" ")[0]} (A)
+                      </button>
+
+                      <button
+                        onClick={() => handleSelectRound1Winner("draw")}
+                        className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                          round1Winner === "draw"
+                            ? "bg-[#64748b] text-white shadow"
+                            : "border border-[#cbd5e1] text-[#64748b] hover:bg-[#f8fafc]"
+                        }`}
+                      >
+                        Empate
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Round 2 */}
+                  <div className={`py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    currentRoundNumber === 2 && !round2Winner ? "bg-[#f8fafc] px-3 rounded-[8px]" : ""
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 ${
+                        round2Winner ? "bg-[#059669] text-white" : currentRoundNumber === 2 ? "bg-[#0284c7] text-white ring-2 ring-[#0284c7]/30" : "bg-[#cbd5e1] text-[#334155]"
+                      }`}>
+                        2
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[15px] text-[#051d30]">Round 2</span>
+                        {round2Duration !== null && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#ecfeff] text-[#0891b2] border border-[#a5f3fc] text-[11px] font-mono font-bold">
+                            ⏱ {formatTimer(round2Duration)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {round1Winner ? (
+                        <>
+                          <button
+                            onClick={() => handleSelectRound2Winner("teamA")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round2Winner === "teamA"
+                                ? "bg-[#ef4444] text-white shadow"
+                                : "border border-[#ef4444] text-[#ef4444] hover:bg-[#fef2f2]"
+                            }`}
+                          >
+                            {selectedMatch.teamA.name.split(" ")[0]} (V)
+                          </button>
+
+                          <button
+                            onClick={() => handleSelectRound2Winner("teamB")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round2Winner === "teamB"
+                                ? "bg-[#0891b2] text-white shadow"
+                                : "border border-[#0891b2] text-[#0891b2] hover:bg-[#ecfeff]"
+                            }`}
+                          >
+                            {selectedMatch.teamB.name.split(" ")[0]} (A)
+                          </button>
+
+                          <button
+                            onClick={() => handleSelectRound2Winner("draw")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round2Winner === "draw"
+                                ? "bg-[#64748b] text-white shadow"
+                                : "border border-[#cbd5e1] text-[#64748b] hover:bg-[#f8fafc]"
+                            }`}
+                          >
+                            Empate
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[12px] text-[#94a3b8] bg-[#f8fafc] px-3 py-1 rounded border border-[#e2e8f0]">
+                          Aguardando Round 1
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Round 3 (Desempate / Decisão) */}
+                  <div className={`py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    currentRoundNumber === 3 && !round3Winner ? "bg-[#f8fafc] px-3 rounded-[8px]" : ""
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 ${
+                        round3Winner ? "bg-[#059669] text-white" : currentRoundNumber === 3 ? "bg-[#0284c7] text-white ring-2 ring-[#0284c7]/30" : "bg-[#cbd5e1] text-[#334155]"
+                      }`}>
+                        3
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[15px] text-[#051d30]">Round 3</span>
+                        {round3Duration !== null && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#ecfeff] text-[#0891b2] border border-[#a5f3fc] text-[11px] font-mono font-bold">
+                            ⏱ {formatTimer(round3Duration)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {round2Winner ? (
+                        <>
+                          <button
+                            onClick={() => handleSelectRound3Winner("teamA")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round3Winner === "teamA"
+                                ? "bg-[#ef4444] text-white shadow"
+                                : "border border-[#ef4444] text-[#ef4444] hover:bg-[#fef2f2]"
+                            }`}
+                          >
+                            {selectedMatch.teamA.name.split(" ")[0]} (V)
+                          </button>
+
+                          <button
+                            onClick={() => handleSelectRound3Winner("teamB")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round3Winner === "teamB"
+                                ? "bg-[#0891b2] text-white shadow"
+                                : "border border-[#0891b2] text-[#0891b2] hover:bg-[#ecfeff]"
+                            }`}
+                          >
+                            {selectedMatch.teamB.name.split(" ")[0]} (A)
+                          </button>
+
+                          <button
+                            onClick={() => handleSelectRound3Winner("draw")}
+                            className={`px-3 py-1.5 rounded text-[12px] font-bold transition-all cursor-pointer ${
+                              round3Winner === "draw"
+                                ? "bg-[#64748b] text-white shadow"
+                                : "border border-[#cbd5e1] text-[#64748b] hover:bg-[#f8fafc]"
+                            }`}
+                          >
+                            Empate
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[12px] text-[#94a3b8] bg-[#f8fafc] px-3 py-1 rounded border border-[#e2e8f0]">
+                          Aguardando Round 2
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+
+              {/* Right Column: Imobilização & Decisão Soberana */}
+              <div className="flex flex-col gap-6">
+                {/* Card 1: Imobilização */}
+                <div className="bg-white rounded-[16px] border border-[#e2e8f0] p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-[15px] font-bold text-[#051d30]">
+                    <span className="text-amber-500">⚠️</span>
+                    <span>Imobilização</span>
+                  </div>
+                  <p className="text-[13px] text-[#64748b] mt-1">
+                    Inicie a contagem de 15 segundos caso um robô pareça inoperante no tatame.
+                  </p>
+
+                  <div
+                    onClick={handleStartImobilizacao}
+                    className={`mt-4 border-2 border-[#f97316] text-[#f97316] hover:bg-[#fff7ed] rounded-[10px] py-4 px-4 flex items-center justify-center gap-2 font-['Space_Grotesk'] font-bold text-[13px] tracking-wider uppercase cursor-pointer transition-all ${
+                      isImobilizacaoRunning ? "bg-[#fff7ed] animate-pulse" : ""
+                    }`}
+                  >
+                    <span>⏱</span>
+                    <span>
+                      {isImobilizacaoRunning && imobilizacaoTimer !== null
+                        ? `CONTAGEM: ${imobilizacaoTimer}S RESTANTES`
+                        : "INICIAR 15S"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 2: Decisão Soberana */}
+                <div className="bg-[#061a30] rounded-[16px] p-6 text-white shadow-xl relative overflow-hidden">
+                  <div className="text-[18px] font-['Space_Grotesk'] font-bold">
+                    Decisão Soberana
+                  </div>
+                  <p className="text-[#94a3b8] text-[13px] mt-1 leading-relaxed">
+                    Ação gravada diretamente no MongoDB Atlas. O resultado será publicado no Telão de Projeção imediatamente.
+                  </p>
+
+                  {/* Big Glowing Cyan Button */}
+                  <button
+                    disabled={isSaving}
+                    onClick={handleConfirmResult}
+                    className="mt-5 w-full bg-[#00e5ff] hover:bg-[#00f2ff] text-[#00356a] font-['Space_Grotesk'] font-black tracking-wider uppercase text-[12px] py-3.5 px-4 rounded-[4px] shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <span>✓</span>
+                    <span>{isSaving ? "CONFIRMANDO..." : "CONFIRMAR RESULTADO"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Bottom Section: JUDGE OBSERVATIONS ────────────────────── */}
+            <div className="mt-8">
+              <span className="text-[11px] font-bold text-[#64748b] tracking-[1.5px] uppercase">
+                JUDGE OBSERVATIONS
+              </span>
+              <div className="bg-white rounded-[12px] border border-[#e2e8f0] p-4 shadow-sm mt-2">
+                <textarea
+                  value={judgeObservations}
+                  onChange={(e) => setJudgeObservations(e.target.value)}
+                  placeholder="Enter technical feedback regarding robot sensors or mechanical performance..."
+                  className="w-full min-h-[90px] border-none outline-none text-[#1e293b] text-[13px] placeholder:text-[#94a3b8] resize-y"
+                />
+              </div>
+              <div className="text-[10px] font-mono text-[#94a3b8] mt-2">
+                TECHNICAL LOG V1.0 • MONGODB ATLAS SYNCED
+              </div>
+            </div>
           </div>
-
-          <div className="mt-4 flex gap-2">
-            <button className="flex-1 rounded-[8px] bg-[#f59e0b] px-3 py-3 text-[11px] font-bold uppercase tracking-[1.2px] text-white hover:bg-[#e88b00]">
-              Registrar
-            </button>
-            <button className="flex-1 rounded-[8px] border border-white/20 bg-[#102b4f] px-3 py-3 text-[11px] font-bold uppercase tracking-[1.2px] text-white hover:bg-[#15376b]">
-              Encerrar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function AvaliacaoTorneio() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [category, setCategory] = useState<Category>(categories[0]);
-  const [teams, setTeams] = useState<Team[]>(() => shuffle(allTeams));
-  const [selectedMatchIndex, setSelectedMatchIndex] = useState<number>(0);
-
-  const selectedMatchup = useMemo<[Team, Team]>(() => {
-    const pair = [...teams];
-    const idx = selectedMatchIndex * 2;
-    return [pair[idx], pair[idx + 1] ?? pair[0]] as [Team, Team];
-  }, [selectedMatchIndex, teams]);
-
-  const goToStep2 = () => setStep(2);
-  const goToStep3 = () => setStep(3);
-
-  return (
-    <div className="min-h-screen bg-[#edf4ff] text-slate-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] overflow-hidden border border-[#d8e5f3] bg-[#edf4ff] shadow-[0_15px_40px_rgba(15,23,42,0.06)]">
-        <Sidebar />
-
-        {step === 1 && (
-          <CategorySelectionScreen
-            selectedCategory={category}
-            onSelectCategory={(next) => setCategory(next)}
-            onContinue={goToStep2}
-          />
-        )}
-
-        {step === 2 && (
-          <TeamSelectionScreen
-            selectedCategory={category}
-            teams={teams}
-            onSortear={() => setTeams(shuffle(allTeams))}
-            onSelectMatch={(index) => {
-              setSelectedMatchIndex(index);
-              goToStep3();
-            }}
-            onContinue={goToStep3}
-          />
-        )}
-
-        {step === 3 && (
-          <EvaluationScreen
-            category={category}
-            matchup={selectedMatchup}
-            onBack={() => setStep(2)}
-          />
         )}
       </div>
     </div>
