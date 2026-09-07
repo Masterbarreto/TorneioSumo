@@ -127,6 +127,39 @@ export default function AdminSidebar({
             );
           })}
         </nav>
+
+        {/* Bottom Logout Action */}
+        <div className="pt-3 border-t border-[rgba(194,198,210,0.3)] shrink-0 mt-2">
+          <button
+            onClick={() => {
+              setMobileOpen(false);
+              onLogout();
+            }}
+            title="Encerrar sessão no sistema"
+            className="flex items-center w-full px-[16px] py-[12px] rounded-[6px] text-left transition-all duration-150 text-[#b91c1c] hover:bg-[#fee2e2]/60 cursor-pointer group"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 transition-transform group-hover:-translate-x-0.5"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span
+              className="pl-[12px] font-['Inter:Bold',Inter,sans-serif] font-bold text-[13px] tracking-[0.7px] uppercase"
+            >
+              LOGOFF / SAIR
+            </span>
+          </button>
+        </div>
       </aside>
     </>
   );

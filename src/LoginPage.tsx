@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import SenacLogo from "./images/Senac_logo.svg.webp";
+import { saveUserSession } from "./utils/cookies";
+
+export const isValidEmail = (val: string) => {
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val.trim());
+};
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 type Role = "ADMIN" | "ALUNO";
@@ -237,15 +242,22 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!email.includes("@")) e.email = "Insira um e-mail válido";
-    if (password.length < 6) e.password = "Senha deve ter ao menos 6 caracteres";
+    const trimmed = email.trim();
+    if (!trimmed) {
+      e.email = "Insira seu e-mail cadastrado.";
+    } else if (!isValidEmail(trimmed)) {
+      e.email = "Formato de e-mail inválido (ex: seu.nome@dominio.com).";
+    }
+    if (password.length < 6) {
+      e.password = "A senha deve ter no mínimo 6 caracteres.";
+    }
     if (role === "ADMIN" && Object.keys(e).length === 0) {
-      if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
-        e.email = "Credenciais de administrador inválidas";
+      if (trimmed !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
+        e.email = "Credenciais de administrador inválidas.";
         e.password = " ";
       }
       if (adminCode !== ADMIN_CREDENTIALS.code) {
-        e.adminCode = "Código especial inválido";
+        e.adminCode = "Código especial inválido.";
       }
     }
     setErrors(e);
@@ -259,17 +271,24 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
       const res = await fetch("http://localhost:3000/api/v1/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim(), password })
       });
       const data = await res.json();
       setLoading(false);
       if (res.status !== 200) {
-        setErrors({ email: data.error || "Erro no login." });
+        setErrors({ email: data.message || data.error || "Credenciais inválidas." });
         return;
       }
       
-      localStorage.setItem("user", JSON.stringify(data));
-      onSubmit(data.cargo, data.userId);
+      saveUserSession({
+        userId: data.userId || data._id || "user-01",
+        name: data.name || data.nome || (role === "ADMIN" ? "Administrador" : "Aluno Competidor"),
+        email: email.trim(),
+        cargo: data.cargo || data.role || role,
+        teamId: data.teamId,
+      });
+      onSubmit(data.cargo || role, data.userId);
     } catch (err) {
       setLoading(false);
       setErrors({ email: "Sem conexão com o servidor de login." });
@@ -404,12 +423,12 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
 
   const validate = () => {
     const e: Partial<typeof form> = {};
-    if (form.name.trim().split(" ").length < 2) e.name = "Insira nome completo";
-    if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(form.cpf)) e.cpf = "Formato: 000.000.000-00";
-    if (!form.email.includes("@")) e.email = "E-mail inválido";
+    if (form.name.trim().split(" ").length < 2) e.name = "Insira seu nome completo";
+    if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(form.cpf)) e.cpf = "Formato de CPF: 000.000.000-00";
+    if (!isValidEmail(form.email)) e.email = "Formato de e-mail inválido (ex: seu.nome@dominio.com)";
     if (form.institution.trim().length < 3) e.institution = "Campo obrigatório";
-    if (form.password.length < 6) e.password = "Mínimo 6 caracteres";
-    if (form.confirm !== form.password) e.confirm = "Senhas não coincidem";
+    if (form.password.length < 6) e.password = "A senha deve ter no mínimo 6 caracteres";
+    if (form.confirm !== form.password) e.confirm = "As senhas não coincidem";
     if (role === "ADMIN" && form.adminCode !== "SENAC2026") {
       e.adminCode = "Código de administrador inválido";
     }
@@ -429,10 +448,11 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
       const res = await fetch("http://localhost:3000/api/v1/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          email: form.email,
+          email: form.email.trim(),
           password: form.password,
-          name: form.name,
+          name: form.name.trim(),
           cargo: role === "ADMIN" ? "PROFESSOR" : "ALUNO"
         })
       });
@@ -550,13 +570,20 @@ function VerifyScreen({ email, password, onBack, onDone }: { email: string; pass
       const loginRes = await fetch("http://localhost:3000/api/v1/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim(), password })
       });
       const loginData = await loginRes.json();
       setLoading(false);
 
       if (loginRes.status === 200) {
-        localStorage.setItem("user", JSON.stringify(loginData));
+        saveUserSession({
+          userId: loginData.userId || loginData._id || "user-01",
+          name: loginData.name || loginData.nome || "Aluno Competidor",
+          email: email.trim(),
+          cargo: loginData.cargo || "ALUNO",
+          teamId: loginData.teamId,
+        });
         setSuccess(true);
         setTimeout(() => onDone(loginData), 1200);
       } else {

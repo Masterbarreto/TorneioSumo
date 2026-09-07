@@ -3,6 +3,8 @@ import svgPaths from "@/../imports/svg-sto6umt0ep";
 import LoginPage from "./LoginPage";
 import AdminDashboard from "./AdminDashboard";
 import DashboardDoTecnico from "./imports/DashboardDoTecnico-1/index";
+import AlunoPortal from "./AlunoPortal";
+import { getUserSession, clearUserSession } from "./utils/cookies";
 
 /* ─── Images ─────────────────────────────────────────────────────────── */
 const IMG_HERO =
@@ -621,21 +623,38 @@ function GlobalStyles() {
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(() => {
+    const session = getUserSession();
+    if (session && (session.cargo === "ADMIN" || session.cargo === "PROFESSOR" || session.cargo === "admin")) {
+      return true;
+    }
     const p = window.location.pathname.toLowerCase();
     const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
     return adminRoutes.some(r => p.startsWith(r));
   });
-  const [showTecnico, setShowTecnico] = useState(false);
+  const [showAluno, setShowAluno] = useState(() => {
+    const session = getUserSession();
+    if (session && (session.cargo === "ALUNO" || session.cargo === "COMPETIDOR" || session.cargo === "aluno")) {
+      return true;
+    }
+    return window.location.pathname.toLowerCase().startsWith("/aluno");
+  });
 
   useEffect(() => {
     const onPopState = () => {
+      const session = getUserSession();
       const p = window.location.pathname.toLowerCase();
       const adminRoutes = ["/home", "/admin", "/dashboard", "/times", "/arenas", "/partidas", "/certificados", "/rules", "/avaliar"];
       if (adminRoutes.some(r => p.startsWith(r))) {
         setShowAdmin(true);
-      } else if (p === "/" || p === "") {
+        setShowAluno(false);
+      } else if (p.startsWith("/aluno")) {
+        setShowAluno(true);
         setShowAdmin(false);
-        setShowTecnico(false);
+      } else if (p === "/" || p === "") {
+        if (!session) {
+          setShowAdmin(false);
+          setShowAluno(false);
+        }
       }
     };
     window.addEventListener("popstate", onPopState);
@@ -644,38 +663,59 @@ export default function App() {
 
   const openLogin = () => setShowLogin(true);
   const closeLogin = () => setShowLogin(false);
+
   const openAdmin = () => {
     setShowLogin(false);
     setShowAdmin(true);
+    setShowAluno(false);
     if (window.location.pathname === "/" || window.location.pathname === "") {
       window.history.pushState(null, "", "/home");
     }
   };
-  const closeAdmin = () => {
+
+  const openAluno = () => {
+    setShowLogin(false);
+    setShowAluno(true);
     setShowAdmin(false);
-    window.history.pushState(null, "", "/");
+    if (window.location.pathname === "/" || window.location.pathname === "") {
+      window.history.pushState(null, "", "/aluno");
+    }
   };
-  const openTecnico = () => { setShowLogin(false); setShowTecnico(true); };
-  const closeTecnico = () => {
-    setShowTecnico(false);
+
+  const handleLogout = async () => {
+    const session = getUserSession();
+    if (session?.userId) {
+      try {
+        await fetch(`http://localhost:3000/api/v1/users/logout/${session.userId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      } catch (e) {}
+    }
+    clearUserSession();
+    setShowAdmin(false);
+    setShowAluno(false);
     window.history.pushState(null, "", "/");
+    if (addToastGlobal) {
+      addToastGlobal("Sessão encerrada com sucesso.", "👋");
+    }
   };
 
   if (showAdmin) {
     return (
       <div className="min-h-screen w-full bg-[#f7f9ff]">
         <GlobalStyles />
-        <AdminDashboard onLogout={closeAdmin} />
+        <AdminDashboard onLogout={handleLogout} />
         <ToastContainer />
       </div>
     );
   }
 
-  if (showTecnico) {
+  if (showAluno) {
     return (
       <div className="min-h-screen w-full bg-[#f7f9ff]">
         <GlobalStyles />
-        <DashboardDoTecnico onLogout={closeTecnico} />
+        <AlunoPortal onLogout={handleLogout} />
         <ToastContainer />
       </div>
     );
@@ -693,7 +733,7 @@ export default function App() {
       </div>
       <ScrollTop />
       <ToastContainer />
-      {showLogin && <LoginPage onBack={closeLogin} onAdminLogin={openAdmin} onStudentLogin={openTecnico} />}
+      {showLogin && <LoginPage onBack={closeLogin} onAdminLogin={openAdmin} onStudentLogin={openAluno} />}
     </div>
   );
 }

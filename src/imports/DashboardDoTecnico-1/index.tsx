@@ -437,9 +437,11 @@ function Container17() {
 function TopNavigationBar({
   championshipStarted,
   onToggleChampionship,
+  onLogout,
 }: {
   championshipStarted?: boolean;
   onToggleChampionship?: () => void;
+  onLogout?: () => void;
 }) {
   const [userName, setUserName] = useState("Administrador");
   const [userRole, setUserRole] = useState("ADMIN");
@@ -480,9 +482,25 @@ function TopNavigationBar({
           <span className="text-[11px] font-bold text-[#00356a] uppercase tracking-[0.5px]">API Conectada</span>
         </div>
 
-        <div className="flex flex-col items-end">
-          <span className="font-['Space_Grotesk'] font-bold text-[13px] text-[#051d30] leading-tight">{userName}</span>
-          <span className="font-['Inter',sans-serif] text-[10px] text-[#727782] tracking-wider uppercase">{userRole}</span>
+        <div className="flex items-center gap-3 pl-2 sm:border-l sm:border-[#e2e8f0]">
+          <div className="flex flex-col items-end">
+            <span className="font-['Space_Grotesk'] font-bold text-[13px] text-[#051d30] leading-tight">{userName}</span>
+            <span className="font-['Inter',sans-serif] text-[10px] text-[#727782] tracking-wider uppercase">{userRole}</span>
+          </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Encerrar sessão (Logoff)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-[6px] bg-[#fee2e2] text-[#991b1b] hover:bg-[#fecaca] font-['Space_Grotesk'] font-bold text-[11px] tracking-wider uppercase transition-all shadow-xs cursor-pointer"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Sair</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1227,6 +1245,7 @@ export default function DashboardDoTecnico({
       <TopNavigationBar
         championshipStarted={championshipStarted}
         onToggleChampionship={onToggleChampionship}
+        onLogout={onLogout}
       />
       <CanvasContent stats={stats} onNavigate={onNavigate} />
     </div>
