@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { getUserSession, clearUserSession, UserSession } from "./utils/cookies";
+import { getUserSession, clearUserSession, saveUserSession, UserSession } from "./utils/cookies";
+import AlunoOnboarding from "./AlunoOnboarding";
+import CadastroEquipeWizard from "./CadastroEquipeWizard";
+import EntrarEquipeModal from "./EntrarEquipeModal";
 
 interface TeamMember {
   id: string;
@@ -54,25 +57,35 @@ export default function AlunoPortal({
 }: {
   onLogout: () => void;
 }) {
+  const [user, setUser] = useState<UserSession | null>(() => getUserSession());
+  const [view, setView] = useState<"portal" | "onboarding" | "create_wizard">(() => {
+    const session = getUserSession();
+    // Se o usuário não tiver equipe ainda, mostra a tela de escolha/onboarding
+    if (session && (session.teamId || session.teamName)) {
+      return "portal";
+    }
+    return "onboarding";
+  });
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"equipe" | "partidas" | "credencial" | "regras">("equipe");
-  const [user, setUser] = useState<UserSession | null>(null);
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Mock initial student team data (synced with MongoDB Atlas matches)
+  // Student team data
   const [team, setTeam] = useState<StudentTeam>({
-    id: "tm-sumo-01",
-    name: "CYBERKNIGHTS",
+    id: user?.teamId || "tm-sumo-01",
+    name: user?.teamName || "CYBERKNIGHTS",
     code: "#TM-SUMO-01",
-    robotName: "Kensei Blade 3.0",
+    robotName: user?.robotName || "Kensei Blade 3.0",
     robotWeight: "2.985 kg (Homologado)",
     robotDimensions: "20 x 19.5 x 12 cm",
     bladeType: "Aço Carbono Temperado 45°",
     category: "Heavyweight Sumô 3kg (Autônomo)",
     status: "HOMOLOGADO 100%",
     members: [
-      { id: "m1", name: "Gabriel Henrique", role: "Capitão & Estrategista", avatarColor: "#00356a", docStatus: "approved" },
+      { id: "m1", name: user?.name || "Gabriel Henrique", role: "Capitão & Estrategista", avatarColor: "#00356a", docStatus: "approved" },
       { id: "m2", name: "Lucas Barberato", role: "Programador de Sensores", avatarColor: "#0284c7", docStatus: "approved" },
       { id: "m3", name: "Mariana Souza", role: "Engenheira de Chassi", avatarColor: "#b45309", docStatus: "approved" },
     ],
@@ -95,7 +108,6 @@ export default function AlunoPortal({
           const list = await res.json();
           if (Array.isArray(list)) {
             setMatches(list);
-            // Se encontrar a equipe do usuário na lista de partidas, atualiza
             const found = list.find(
               (m: any) =>
                 m.team1?.name?.toLowerCase().includes("cyber") ||
@@ -126,6 +138,114 @@ export default function AlunoPortal({
     onLogout();
   };
 
+  const handleTeamCreated = (teamData: any) => {
+    const current = user || getUserSession() || {
+      userId: "user-student",
+      name: "Aluno Competidor",
+      cargo: "ALUNO",
+    };
+    const updatedUser: UserSession = {
+      ...current,
+      teamId: teamData.id || teamData._id || teamData.teamId,
+      teamName: teamData.nome || teamData.name,
+      robotName: teamData.robotName || "Kensei Blade 3.0",
+    };
+    saveUserSession(updatedUser, current.remember ?? true);
+    setUser(updatedUser);
+
+    setTeam({
+      id: teamData.id || teamData._id || "tm-new",
+      name: teamData.nome || teamData.name || "NOVA EQUIPE",
+      code: teamData.teamId || `#RA-2026-${Math.floor(100 + Math.random() * 900)}`,
+      robotName: teamData.robotName || "Kensei Blade 3.0",
+      robotWeight: "2.985 kg (Homologado)",
+      robotDimensions: "20 x 19.5 x 12 cm",
+      bladeType: "Aço Carbono Temperado 45°",
+      category: teamData.category || "Heavyweight Sumô 3kg (Autônomo)",
+      status: "EM ANÁLISE TÉCNICA (5 DIAS)",
+      members: (teamData.members || []).map((m: any, idx: number) => ({
+        id: m.id || `m_${idx}`,
+        name: m.name,
+        role: m.role || "Competidor",
+        avatarColor: m.color || "#00356a",
+        docStatus: m.docStatus || "approved",
+      })),
+    });
+
+    setView("portal");
+  };
+
+  const handleTeamJoined = (teamData: any) => {
+    const current = user || getUserSession() || {
+      userId: "user-student",
+      name: "Aluno Competidor",
+      cargo: "ALUNO",
+    };
+    const updatedUser: UserSession = {
+      ...current,
+      teamId: teamData.id || teamData._id,
+      teamName: teamData.name || teamData.nome,
+      robotName: teamData.robotName || "Kensei Blade 3.0",
+    };
+    saveUserSession(updatedUser, current.remember ?? true);
+    setUser(updatedUser);
+
+    setTeam({
+      id: teamData.id || teamData._id || "tm-joined",
+      name: teamData.name || teamData.nome,
+      code: teamData.code || teamData.teamId || `#RA-2026-001`,
+      robotName: teamData.robotName || "Kensei Blade 3.0",
+      robotWeight: "2.985 kg (Homologado)",
+      robotDimensions: "20 x 19.5 x 12 cm",
+      bladeType: "Aço Carbono Temperado 45°",
+      category: "Heavyweight Sumô 3kg (Autônomo)",
+      status: "EQUIPE HOMOLOGADA",
+      members: (teamData.members || []).map((m: any, idx: number) => ({
+        id: m.id || `m_${idx}`,
+        name: m.name,
+        role: m.role || "Competidor",
+        avatarColor: m.color || "#00356a",
+        docStatus: m.docStatus || "approved",
+      })),
+    });
+
+    setIsJoinModalOpen(false);
+    setView("portal");
+  };
+
+  // 1. View: Onboarding (Primeiro Acesso)
+  if (view === "onboarding") {
+    return (
+      <>
+        <AlunoOnboarding
+          user={user}
+          onCreateTeam={() => setView("create_wizard")}
+          onJoinTeam={() => setIsJoinModalOpen(true)}
+          onLogout={handleLogoutClick}
+        />
+        <EntrarEquipeModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          user={user}
+          onSuccess={handleTeamJoined}
+        />
+      </>
+    );
+  }
+
+  // 2. View: Cadastro de Equipe (Wizard em 3 Passos)
+  if (view === "create_wizard") {
+    return (
+      <CadastroEquipeWizard
+        user={user}
+        onCancel={() => setView("onboarding")}
+        onComplete={handleTeamCreated}
+        onLogout={handleLogoutClick}
+      />
+    );
+  }
+
+  // 3. View: Dashboard Principal do Aluno
   const myMatches = matches.filter(
     (m) =>
       m.team1?.name?.toUpperCase() === team.name.toUpperCase() ||
@@ -159,8 +279,18 @@ export default function AlunoPortal({
           {/* Status Badge */}
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            EQUIPE HOMOLOGADA
+            {team.status || "EQUIPE HOMOLOGADA"}
           </span>
+
+          {/* Trocar/Cadastrar Nova Equipe */}
+          <button
+            onClick={() => setView("onboarding")}
+            className="flex items-center gap-1 text-[11px] font-bold text-[#00356a] hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border border-[#c2d9f5] transition-colors cursor-pointer font-['Space_Grotesk'] uppercase tracking-wider"
+            title="Trocar de equipe ou cadastrar nova equipe"
+          >
+            <span>🔄</span>
+            <span className="hidden sm:inline">Trocar Equipe</span>
+          </button>
 
           {/* User Profile & Logoff */}
           <div className="flex items-center gap-3 pl-3 border-l border-[#e2e8f0]">
