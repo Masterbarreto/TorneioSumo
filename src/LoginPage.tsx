@@ -9,7 +9,7 @@ export const isValidEmail = (val: string) => {
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 type Role = "ADMIN" | "ALUNO";
-type Screen = "login" | "register" | "verify" | "register-team";
+type Screen = "login" | "register" | "verify" | "register-team" | "forgot-password";
 
 /* ─── robot arm bg (reusing existing unsplash) ───────────────────────── */
 const IMG_ROBOT =
@@ -227,9 +227,10 @@ function useTimer(seconds: number) {
 }
 
 /* ─── Login screen ───────────────────────────────────────────────────── */
-function LoginScreen({ role, setRole, onRegister, onSubmit }: {
+function LoginScreen({ role, setRole, onRegister, onSubmit, onForgotPassword }: {
   role: Role; setRole: (r: Role) => void;
   onRegister: () => void; onSubmit: (cargo: string, userId: string) => void;
+  onForgotPassword: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -321,7 +322,11 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         label="Senha"
         hint={errors.password}
         action={
-          <button className="font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#00356a] text-[12px] hover:underline" onClick={() => {}}>
+          <button
+            type="button"
+            className="font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#00356a] text-[12px] hover:underline cursor-pointer"
+            onClick={onForgotPassword}
+          >
             Esqueceu a senha?
           </button>
         }
@@ -1277,6 +1282,223 @@ function RegisterTeamScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
   );
 }
 
+/* ─── Forgot password screen ─────────────────────────────────────────── */
+function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
+  const [step, setStep] = useState<"request" | "reset">("request");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; code?: string; password?: string; confirm?: string; general?: string }>({});
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleRequestCode = async () => {
+    const e: typeof errors = {};
+    if (!email.trim()) {
+      e.email = "Informe seu e-mail cadastrado.";
+    } else if (!isValidEmail(email.trim())) {
+      e.email = "Formato de e-mail inválido (ex: seu.nome@dominio.com).";
+    }
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
+
+    setLoading(true);
+    setErrors({});
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/request-password-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        setErrors({ email: data.error || "Não foi possível enviar o código." });
+        return;
+      }
+
+      if (data.resetCode) {
+        setCode(data.resetCode);
+      }
+      setSuccessMsg("Código de recuperação enviado para o seu e-mail!");
+      setStep("reset");
+    } catch (err) {
+      setLoading(false);
+      setErrors({ email: "Erro de conexão com o servidor." });
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const e: typeof errors = {};
+    if (!code.trim()) {
+      e.code = "Informe o código de 6 dígitos recebido.";
+    }
+    if (newPassword.length < 6) {
+      e.password = "A nova senha deve ter no mínimo 6 caracteres.";
+    }
+    if (newPassword !== confirmPassword) {
+      e.confirm = "As senhas não coincidem.";
+    }
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
+
+    setLoading(true);
+    setErrors({});
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          code: code.trim(),
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        setErrors({ general: data.error || "Erro ao redefinir a senha." });
+        return;
+      }
+
+      setSuccessMsg("Senha redefinida com sucesso! Redirecionando para o login...");
+      setTimeout(() => {
+        onBack();
+      }, 1800);
+    } catch (err) {
+      setLoading(false);
+      setErrors({ general: "Erro de conexão com o servidor." });
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6" style={{ animation: "loginSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both" }}>
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-[#00356a] font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[13px] hover:gap-3 transition-all w-fit cursor-pointer"
+      >
+        <IconArrowLeft /> Voltar para o Login
+      </button>
+
+      <div>
+        <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[26px] leading-tight">
+          {step === "request" ? "Recuperar Senha" : "Criar Nova Senha"}
+        </h2>
+        <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[14px] mt-1">
+          {step === "request"
+            ? "Informe o e-mail cadastrado para enviarmos um código de verificação."
+            : `Digite o código enviado para ${email} e defina sua nova senha.`}
+        </p>
+      </div>
+
+      {successMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] p-3 rounded-[8px] flex items-center gap-2 font-['Inter:Regular',Inter,sans-serif]">
+          <span>✓</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {errors.general && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-[13px] p-3 rounded-[8px] flex items-center gap-2 font-['Inter:Regular',Inter,sans-serif]">
+          <span>⚠️</span>
+          <span>{errors.general}</span>
+        </div>
+      )}
+
+      {step === "request" ? (
+        <>
+          <Field label="E-mail da Conta" hint={errors.email}>
+            <TextInput
+              icon={<IconMail />}
+              placeholder="seu.email@exemplo.com"
+              value={email}
+              onChange={setEmail}
+              error={!!errors.email}
+            />
+          </Field>
+
+          <button
+            onClick={handleRequestCode}
+            disabled={loading}
+            className="bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[14px] tracking-[1.6px] uppercase py-4 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#00468a] disabled:opacity-70 transition-all duration-200 active:scale-[0.99] shadow-[0_4px_16px_rgba(0,53,106,0.25)] cursor-pointer"
+          >
+            {loading ? (
+              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> ENVIANDO CÓDIGO...</>
+            ) : (
+              <>ENVIAR CÓDIGO DE RECUPERAÇÃO <span>→</span></>
+            )}
+          </button>
+        </>
+      ) : (
+        <>
+          <Field label="Código de 6 Dígitos" hint={errors.code}>
+            <TextInput
+              icon={<IconLock />}
+              placeholder="Ex: 123456"
+              value={code}
+              onChange={setCode}
+              error={!!errors.code}
+            />
+          </Field>
+
+          <Field label="Nova Senha" hint={errors.password}>
+            <div className={`flex items-center gap-3 bg-[#f0f4fa] border rounded-[8px] px-4 py-3 transition-all duration-150 focus-within:bg-white focus-within:border-[#00356a] focus-within:shadow-[0_0_0_3px_rgba(0,53,106,0.1)] ${errors.password ? "border-red-400" : "border-[#e2e8f0]"}`}>
+              <span className="text-[#8c9ab0] shrink-0"><IconLock /></span>
+              <input
+                type={showPw ? "text" : "password"}
+                placeholder="No mínimo 6 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="flex-1 bg-transparent font-['Inter:Regular',Inter,sans-serif] text-[14px] text-[#051d30] outline-none placeholder:text-[#b0bac8]"
+              />
+              <button type="button" className="text-[#8c9ab0] hover:text-[#051d30] transition-colors cursor-pointer" onClick={() => setShowPw((v) => !v)}>
+                <IconEye open={showPw} />
+              </button>
+            </div>
+          </Field>
+
+          <Field label="Confirme a Nova Senha" hint={errors.confirm}>
+            <div className={`flex items-center gap-3 bg-[#f0f4fa] border rounded-[8px] px-4 py-3 transition-all duration-150 focus-within:bg-white focus-within:border-[#00356a] focus-within:shadow-[0_0_0_3px_rgba(0,53,106,0.1)] ${errors.confirm ? "border-red-400" : "border-[#e2e8f0]"}`}>
+              <span className="text-[#8c9ab0] shrink-0"><IconLock /></span>
+              <input
+                type="password"
+                placeholder="Repita a nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="flex-1 bg-transparent font-['Inter:Regular',Inter,sans-serif] text-[14px] text-[#051d30] outline-none placeholder:text-[#b0bac8]"
+              />
+            </div>
+          </Field>
+
+          <button
+            onClick={handleResetPassword}
+            disabled={loading}
+            className="bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[14px] tracking-[1.6px] uppercase py-4 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#00468a] disabled:opacity-70 transition-all duration-200 active:scale-[0.99] shadow-[0_4px_16px_rgba(0,53,106,0.25)] cursor-pointer"
+          >
+            {loading ? (
+              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> SALVANDO NOVA SENHA...</>
+            ) : (
+              <>REDEFINIR SENHA <span>✓</span></>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStep("request")}
+            className="text-[#00356a] text-[12px] font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-center hover:underline cursor-pointer"
+          >
+            Reenviar código para outro e-mail
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ─── LoginPage (exported) ───────────────────────────────────────────── */
 export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { onBack: () => void; onAdminLogin?: () => void; onStudentLogin?: () => void }) {
   const [screen, setScreen] = useState<Screen>("login");
@@ -1328,6 +1550,7 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
               <LoginScreen
                 role={role} setRole={setRole}
                 onRegister={() => setScreen("register")}
+                onForgotPassword={() => setScreen("forgot-password")}
                 onSubmit={async (userRole: string) => {
                   setRole(userRole === "ADMIN" ? "ADMIN" : "ALUNO");
                   if (userRole === "ADMIN" || userRole === "PROFESSOR") {
@@ -1367,6 +1590,11 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
               <RegisterTeamScreen
                 onBack={() => setScreen("login")}
                 onDone={() => (onStudentLogin ? onStudentLogin() : onBack())}
+              />
+            )}
+            {screen === "forgot-password" && (
+              <ForgotPasswordScreen
+                onBack={() => setScreen("login")}
               />
             )}
           </div>
