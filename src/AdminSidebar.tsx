@@ -28,7 +28,7 @@ const NAV: NavItem[] = [
     ),
   },
   { key: "rules",       label: "Avaliar",     iconPath: svgPaths.p19ed9400, viewBox: "0 0 18 19",            w: 18, h: 19 },
-  { key: "documents",   label: "Documents",   iconPath: svgPaths.pc679c40,  viewBox: "0 0 16 20",            w: 16, h: 20 },
+  { key: "documents",   label: "Documentos",  iconPath: svgPaths.pc679c40,  viewBox: "0 0 16 20",            w: 16, h: 20 },
 ];
 
 export default function AdminSidebar({

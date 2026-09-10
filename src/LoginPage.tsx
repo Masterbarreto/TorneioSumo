@@ -401,7 +401,7 @@ function LoginScreen({ role, setRole, onRegister, onSubmit }: {
         className="border-2 border-[#00356a] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[13px] tracking-[1.4px] uppercase py-3.5 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#edf4ff] transition-all duration-200 active:scale-[0.99] group"
       >
         <span className="transition-transform group-hover:rotate-90 duration-200"><IconPlus /></span>
-        {role === "ADMIN" ? "REGISTRAR  novo adiministrador" : "REGISTRAR NOVA EQUIPE"}
+        {role === "ADMIN" ? "REGISTRAR NOVO ADMINISTRADOR" : "REGISTRAR NOVA EQUIPE"}
       </button>
 
       <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[13px] text-center">
@@ -536,11 +536,11 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
       >
         {loading ? (
           <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> ENVIANDO...</>
-        ) : (role === "ADMIN" ? "REGISTRAR  novo adiministrador" : "REGISTRAR NOVA EQUIPE")}
+        ) : (role === "ADMIN" ? "REGISTRAR NOVO ADMINISTRADOR" : "REGISTRAR NOVA EQUIPE")}
       </button>
 
       <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[13px] text-center">
-        Já tenho conta?{" "}
+        Já possui uma conta?{" "}
         <button onClick={onBack} className="font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#00356a] hover:underline">Acessar Portal</button>
       </p>
     </div>

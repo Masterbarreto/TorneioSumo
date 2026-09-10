@@ -163,7 +163,7 @@ function CountdownWidget() {
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
             <p className="font-['Liberation_Mono:Regular',monospace] text-[10px] text-[rgba(5,29,48,0.6)] tracking-[1px] uppercase leading-[15px]">CONTAGEM REGRESSIVA</p>
-            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio de sumo 2026</p>
+            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio de Sumô 2026</p>
           </div>
           <svg width="18" height="21" viewBox="0 0 18 21" fill="none">
             <path d={svgPaths.pe40b59c} fill="#8C4F00" />
@@ -231,7 +231,7 @@ function HeroSection() {
         {/* Heading */}
         <div className="flex flex-col" style={{ animation: "fadeInUp 0.6s 0.1s ease both" }}>
           <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 60px rgba(0,53,106,0.5)" }}>Torneio de </span>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}>Sumo</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}>Sumô</span>
         </div>
 
         {/* Description */}
@@ -239,7 +239,7 @@ function HeroSection() {
           className="font-['Inter:Light',Inter,sans-serif] font-light text-[rgba(255,255,255,0.8)] text-[18px] leading-relaxed max-w-2xl"
           style={{ animation: "fadeInUp 0.6s 0.2s ease both" }}
         >
-          Participe do torneio de sumo e teste suas habilidades em robótica, programação e estratégia. Forme sua equipe, construa seu robô e prepare-se para a competição!
+          Participe do torneio de sumô e teste suas habilidades em robótica, programação e estratégia. Forme sua equipe, construa seu robô e prepare-se para a competição!
         </p>
 
         {/* CTAs */}
