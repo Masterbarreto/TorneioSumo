@@ -156,10 +156,10 @@ function CountdownWidget() {
   ];
   return (
     <div
-      className="absolute bg-white bottom-[80px] right-[5%] rounded-[2px] p-8 w-[310px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.35)] z-10 border-l-8 border-[#8c4f00]"
+      className="relative mt-8 sm:mt-0 sm:absolute bg-white bottom-6 right-4 sm:bottom-[80px] sm:right-[5%] rounded-[2px] p-5 sm:p-8 w-[calc(100%-2rem)] max-w-[310px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.35)] z-10 border-l-8 border-[#8c4f00]"
       style={{ animation: "slideInRight 0.7s 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:gap-6">
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
             <p className="font-['Liberation_Mono:Regular',monospace] text-[10px] text-[rgba(5,29,48,0.6)] tracking-[1px] uppercase leading-[15px]">CONTAGEM REGRESSIVA</p>
@@ -172,8 +172,8 @@ function CountdownWidget() {
         <div className="grid grid-cols-4 gap-2">
           {units.map(({ value, label }) => (
             <div key={label} className="flex flex-col gap-1 items-center">
-              <div className="bg-[#edf4ff] rounded-[2px] w-full flex items-center justify-center py-3 transition-all duration-300 hover:bg-[#00356a] group">
-                <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] leading-none group-hover:text-white transition-colors">{value}</span>
+              <div className="bg-[#edf4ff] rounded-[2px] w-full flex items-center justify-center py-2.5 sm:py-3 transition-all duration-300 hover:bg-[#00356a] group">
+                <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[clamp(16px,5vw,20px)] leading-none group-hover:text-white transition-colors">{value}</span>
               </div>
               <span className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[#051d30] text-[9px] uppercase">{label}</span>
             </div>

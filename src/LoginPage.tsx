@@ -9,7 +9,7 @@ export const isValidEmail = (val: string) => {
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 type Role = "ADMIN" | "ALUNO";
-type Screen = "login" | "register" | "verify" | "register-team" | "forgot-password";
+type Screen = "login" | "register" | "verify" | "register-team" | "forgot-password"; 
 
 /* ─── robot arm bg (reusing existing unsplash) ───────────────────────── */
 const IMG_ROBOT =
