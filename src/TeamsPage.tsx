@@ -1024,82 +1024,84 @@ function TeamList({
         {filtered.map((team) => {
           const hasIssue = team.status === "AJUSTE NECESSÁRIO";
           return (
-            <div key={team.id} className="bg-white rounded-[8px] flex items-center gap-5 px-5 py-4 hover:shadow-md transition-shadow cursor-pointer"
+            <div key={team.id} className="bg-white rounded-[8px] hover:shadow-md transition-shadow cursor-pointer overflow-x-auto"
               style={{ border: `1px solid ${hasIssue ? "rgba(239,68,68,0.3)" : "rgba(194,198,210,0.3)"}`, borderLeft: hasIssue ? "3px solid #ef4444" : "1px solid rgba(194,198,210,0.3)" }}
               onClick={() => onSelectTeam(team)}>
-              {/* Logo */}
-              <div className="w-[52px] h-[52px] rounded-[6px] overflow-hidden shrink-0 bg-[#f1f5f9] flex items-center justify-center">
-                {team.logo
-                  ? <img src={team.logo} alt={team.name || team.fullName} className="w-full h-full object-cover" />
-                  : <span className="text-[16px] font-bold text-[#94a3b8]">{(team.name || team.fullName || "E")[0]}</span>}
-              </div>
-              {/* Name + ID */}
-              <div style={{ width: 180 }}>
-                <p className="font-bold text-[15px] text-[#051d30]">{team.name || team.fullName}</p>
-                <p className="font-normal text-[13px] text-[#051d30]">{(team.fullName || "").replace(team.name || "", "").trim() || team.fullName || team.name}</p>
-                <p className="text-[10px] text-[#8c9ab0] mt-0.5">ID: {team.teamId}</p>
-              </div>
-              {/* Member avatars */}
-              <div className="flex items-center" style={{ minWidth: 100 }}>
-                <div className="flex -space-x-2">
-                  {team.members.slice(0, 3).map((m) => (
-                    <div key={m.id} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white" style={{ background: m.color }}>
-                      {m.initials}
+              <div className="flex items-center gap-5 px-5 py-4 min-w-[720px]">
+                  {/* Logo */}
+                <div className="w-[52px] h-[52px] rounded-[6px] overflow-hidden shrink-0 bg-[#f1f5f9] flex items-center justify-center">
+                  {team.logo
+                    ? <img src={team.logo} alt={team.name || team.fullName} className="w-full h-full object-cover" />
+                    : <span className="text-[16px] font-bold text-[#94a3b8]">{(team.name || team.fullName || "E")[0]}</span>}
+                </div>
+                {/* Name + ID */}
+                <div style={{ minWidth: 140 }}>
+                  <p className="font-bold text-[15px] text-[#051d30] whitespace-nowrap">{team.name || team.fullName}</p>
+                  <p className="font-normal text-[13px] text-[#051d30]">{(team.fullName || "").replace(team.name || "", "").trim() || team.fullName || team.name}</p>
+                  <p className="text-[10px] text-[#8c9ab0] mt-0.5">ID: {team.teamId}</p>
+                </div>
+                {/* Member avatars */}
+                <div className="flex items-center" style={{ minWidth: 100 }}>
+                  <div className="flex -space-x-2">
+                    {team.members.slice(0, 3).map((m) => (
+                      <div key={m.id} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white" style={{ background: m.color }}>
+                        {m.initials}
+                      </div>
+                    ))}
+                    {team.members.length > 3 && (
+                      <div className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold bg-[#e2e8f0] text-[#475569]">
+                        +{team.members.length - 3}
+                      </div>
+                    )}
+                  </div>
+                  <span className="ml-2 text-[10px] text-[#94a3b8]">{team.members.length} membros</span>
+                </div>
+                {/* Doc status */}
+                <div className="flex items-center gap-2 ml-auto">
+                  {team.status === "APROVADO" ? (
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#16a34a]">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      VERIFICADO
                     </div>
-                  ))}
-                  {team.members.length > 3 && (
-                    <div className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold bg-[#e2e8f0] text-[#475569]">
-                      +{team.members.length - 3}
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {[{ label: "IDENTIDADE" }, { label: "DIREITO IMAGEM" }].map((d) => (
+                        <div key={d.label} className="flex items-center gap-1 rounded-[4px] px-2 py-1" style={{ background: hasIssue ? "#fee2e2" : "#f1f5f9" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={hasIssue ? "#dc2626" : "#94a3b8"} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <span className="text-[9px] uppercase tracking-[0.3px] font-medium" style={{ color: hasIssue ? "#dc2626" : "#94a3b8" }}>{d.label}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                <span className="ml-2 text-[10px] text-[#94a3b8]">{team.members.length} membros</span>
-              </div>
-              {/* Doc status */}
-              <div className="flex items-center gap-2 ml-auto">
-                {team.status === "APROVADO" ? (
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#16a34a]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    VERIFICADO
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    {[{ label: "IDENTIDADE" }, { label: "DIREITO IMAGEM" }].map((d) => (
-                      <div key={d.label} className="flex items-center gap-1 rounded-[4px] px-2 py-1" style={{ background: hasIssue ? "#fee2e2" : "#f1f5f9" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={hasIssue ? "#dc2626" : "#94a3b8"} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        <span className="text-[9px] uppercase tracking-[0.3px] font-medium" style={{ color: hasIssue ? "#dc2626" : "#94a3b8" }}>{d.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {/* Status */}
-              <div style={{ minWidth: 120 }}>{statusChip(team.status)}</div>
-              {/* Actions: Eye & Delete */}
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  className="p-2 rounded-full hover:bg-[#edf4ff] text-[#00356a] transition-colors cursor-pointer"
-                  title="Ver perfil da equipe"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                {onDeleteTeam && (
+                {/* Status */}
+                <div style={{ minWidth: 120 }}>{statusChip(team.status)}</div>
+                {/* Actions: Eye & Delete */}
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteTeam(team);
-                    }}
-                    className="p-2 rounded-full hover:bg-red-50 text-[#94a3b8] hover:text-[#dc2626] transition-colors cursor-pointer"
-                    title="Excluir equipe"
+                    className="p-2 rounded-full hover:bg-[#edf4ff] text-[#00356a] transition-colors cursor-pointer"
+                    title="Ver perfil da equipe"
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                )}
+                  {onDeleteTeam && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteTeam(team);
+                      }}
+                      className="p-2 rounded-full hover:bg-red-50 text-[#94a3b8] hover:text-[#dc2626] transition-colors cursor-pointer"
+                      title="Excluir equipe"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

@@ -337,7 +337,7 @@ function NewsSection() {
         </div>
 
         {/* Dots */}
-        <div className="flex justify-center gap-2 -mt-8">
+        <div className="hidden sm:flex justify-center gap-2 -mt-8">
           {cards.map((_, i) => (
             <button
               key={i}

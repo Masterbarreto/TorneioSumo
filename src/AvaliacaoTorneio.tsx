@@ -41,7 +41,7 @@ export default function AvaliacaoTorneio({
   onNavigate,
   onLogout,
 }: {
-  onNavigate?: (key: string) => void;
+  onNavigate?: (key: string) => void; //Resolver questão de undefined - diferença entre obrigatório e opcional
   onLogout?: () => void;
 }) {
   // Step state: 1 = Arena Selection Hub, 2 = Gestão de Chaves e Sorteio, 3 = Robot Sumô Console

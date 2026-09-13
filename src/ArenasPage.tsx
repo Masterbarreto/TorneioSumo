@@ -449,8 +449,9 @@ function StatusTable({ arenas, onEdit, onDelete, onTeams }: { arenas: Arena[]; o
           <span className="font-['Inter:Regular',Inter,sans-serif] text-[12px] text-green-600">Sistema Operacional</span>
         </div>
       </div>
-      <table className="w-full">
-        <thead>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px]">
+         <thead>
           <tr className="bg-[#f7f9ff]">
             {cols.map((c) => (
               <th key={c} className="px-4 py-3 text-left font-['Inter:Bold',Inter,sans-serif] font-bold text-[11px] tracking-[0.8px] uppercase text-[#8c9ab0]">{c}</th>
@@ -465,7 +466,7 @@ function StatusTable({ arenas, onEdit, onDelete, onTeams }: { arenas: Arena[]; o
                   <div className="w-9 h-9 rounded-[4px] overflow-hidden bg-[#cfe5ff] shrink-0">
                     <img src={a.image} alt={a.name} className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                   </div>
-                  <span className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[#051d30] text-[13px]">{a.name}</span>
+                  <span className="font-['Inter:Bold',Inter,sans-serif] font-bold text-[#051d30] text-[13px] whitespace-nowrap">{a.name}</span>
                 </div>
               </td>
               <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
@@ -483,8 +484,9 @@ function StatusTable({ arenas, onEdit, onDelete, onTeams }: { arenas: Arena[]; o
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
+         </tbody>
+        </table>
+      </div>
     </div>
   );
 }
