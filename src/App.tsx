@@ -156,7 +156,7 @@ function CountdownWidget() {
   ];
   return (
     <div
-      className="relative mt-8 sm:mt-0 sm:absolute bg-white bottom-6 right-4 sm:bottom-[80px] sm:right-[5%] rounded-[2px] p-5 sm:p-8 w-[calc(100%-2rem)] max-w-[310px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.35)] z-10 border-l-8 border-[#8c4f00]"
+      className="relative sm:mt-0 sm:absolute bg-white sm:bottom-[80px] sm:right-[5%] rounded-[2px] p-5 sm:p-8 w-full sm:w-[calc(100%-2rem)] mx-auto sm:mx-0 max-w-[310px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.35)] z-10 border-l-8 border-[#8c4f00]"
       style={{ animation: "slideInRight 0.7s 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
     >
       <div className="flex flex-col gap-4 sm:gap-6">
@@ -201,7 +201,7 @@ function HeroSection() {
   return (
     <div
       ref={heroRef}
-      className="relative w-full min-h-[600px] lg:min-h-[740px] flex items-center overflow-hidden"
+      className="relative w-full pb-20 sm:pb-0 sm:min-h-[600px] lg:min-h-[740px] flex flex-col sm:flex-row sm:items-center overflow-hidden"
       style={{ background: "radial-gradient(ellipse at center, rgba(0,53,106,0.8) 0%, rgba(3,41,77,0.9) 50%, rgba(5,29,48,1) 100%)" }}
       onMouseMove={handleMouseMove}
     >
@@ -298,7 +298,7 @@ function NewsSection() {
             <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#8c4f00] text-[12px] tracking-[4.8px] uppercase">DESTAQUES &amp; NOVIDADES</span>
             <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[clamp(28px,4vw,48px)] tracking-[-2px] uppercase leading-none">AÇÃO EM TEMPO REAL</h2>
           </div>
-          <div className="flex gap-4">
+          <div className="hidden sm:flex gap-4 lg:flex gap-4">
             <RippleBtn rippleColor="rgba(0,53,106,0.15)" onClick={() => navigate("left")} className="w-12 h-12 flex items-center justify-center border border-[#c2c6d2] rounded-[12px] hover:bg-[#edf4ff] hover:border-[#00356a] hover:scale-110 transition-all duration-200 active:scale-95">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgPaths.p300a1100} fill="#051D30" /></svg>
             </RippleBtn>
@@ -568,7 +568,7 @@ function NavBar({ onLoginClick }: { onLoginClick: () => void }) {
               </button>
             ))}
             <RippleBtn
-              className="bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1.2px] uppercase px-6 py-3 rounded-[2px] text-center mt-2 active:scale-95"
+              className=" text-right bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1.2px] uppercase px-6 py-3 rounded-[2px] text-center mt-2 active:scale-95"
               onClick={() => { setOpen(false); onLoginClick(); }}
             >
               ENTRAR NO PORTAL
