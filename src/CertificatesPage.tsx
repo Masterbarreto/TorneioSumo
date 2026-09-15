@@ -283,13 +283,14 @@ function CertCard({
       <div
         style={{
           position: "absolute",
-          left: "12%",
-          right: "12%",
+          left: "10%",
+          right: "14%",
           top: "44.2%",
           height: "6.4%",
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "baseline",
           justifyContent: "center",
+          gap:"0.5cqi",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -315,7 +316,6 @@ function CertCard({
             fontSize: "1.4cqi",
             fontWeight: 600,
             color: "#00529b",
-            marginLeft: "0.9cqi",
             lineHeight: 1.1,
           }}
         >
@@ -332,6 +332,7 @@ function CertCard({
           width: "25.4%",
           height: "6.8%",
           display: "flex",
+          gap: "0.2cqi",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
@@ -344,6 +345,8 @@ function CertCard({
             fontWeight: 800,
             color: "#00356a",
             lineHeight: 1,
+            display:"inline-flex",
+            alignItems: "baseline",
           }}
         >
           {placementText}
@@ -357,8 +360,9 @@ function CertCard({
           left: "34%",
           top: "73.2%",
           width: "32%",
-          height: "7.6%",
+          height: "9%",
           display: "flex",
+          gap: "0.6cqi",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
@@ -368,13 +372,13 @@ function CertCard({
         <span
           style={{
             fontFamily: "'Alex Brush', cursive, 'Brush Script MT'",
-            fontSize: "3.2cqi",
+            fontSize: "3cqi",
             color: "#002b55",
             transform: "rotate(-2deg)",
-            lineHeight: 0.9,
+            lineHeight: 1.3,
           }}
         >
-          Eduardo Silva
+          Alexandre Neves
         </span>
         <span
           style={{
@@ -383,10 +387,10 @@ function CertCard({
             fontWeight: 700,
             color: "#051d30",
             letterSpacing: "0.04cqi",
-            marginTop: "0.1cqi",
+            marginTop: "0.3cqi",
           }}
         >
-          Prof. Dr. Eduardo Silva
+          Prof. Me. Alexandre Neves
         </span>
       </div>
 
