@@ -1192,13 +1192,13 @@ export default function AvaliacaoTorneio({
             {/* ─── Bottom Section: JUDGE OBSERVATIONS ────────────────────── */}
             <div className="mt-8">
               <span className="text-[11px] font-bold text-[#64748b] tracking-[1.5px] uppercase">
-                JUDGE OBSERVATIONS
+                OBSERVAÇÕES TÉCNICAS DO JUIZ
               </span>
               <div className="bg-white rounded-[12px] border border-[#e2e8f0] p-4 shadow-sm mt-2">
                 <textarea
                   value={judgeObservations}
-                  onChange={(e) => setJudgeObservations(e.target.value)}
-                  placeholder="Enter technical feedback regarding robot sensors or mechanical performance..."
+                  onChange={(e) => setJudgeObservations(e.target.value)} // Enter technical feedback regarding robot sensors or mechanical performance...
+                  placeholder="Insira feedback técnico sobre os sensores ou o desempenho mecânico do robô..."
                   className="w-full min-h-[90px] border-none outline-none text-[#1e293b] text-[13px] placeholder:text-[#94a3b8] resize-y"
                 />
               </div>
