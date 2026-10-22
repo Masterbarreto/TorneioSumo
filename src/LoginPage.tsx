@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import SenacLogo from "./images/Senac_logo.svg.webp";
+import SenacLogo from "./images/Seenac_logo_removido.png";
 import { saveUserSession } from "./utils/cookies";
 import { API_BASE_URL } from "./config/api";
 
@@ -115,7 +115,7 @@ function LeftPanel() {
       </div>
 
       {/* Footer logo */}
-      <div className="relative z-10 w-[160px] h-[80px] flex items-center justify-start">
+      <div className="relative z-10 w-[200px] h-[120px] flex items-center justify-start">
         <img
           src={SenacLogo}
           alt="SENAC"

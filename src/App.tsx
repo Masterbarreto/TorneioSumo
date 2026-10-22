@@ -440,7 +440,7 @@ function Footer({ onLoginClick }: { onLoginClick: () => void }) {
         style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(30px)" }}
       >
         <div className="flex flex-col gap-6 max-w-xs">
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[22px] tracking-[-1px]">SENAC ROBOTICS</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[22px] tracking-[-1px]">ENGENHARIAS SENAC</span>
           <p className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.5)] text-[12px] leading-relaxed">
             © 2026 Senac Engineering Committee.<br />Architecting the future of precision systems.
           </p>
@@ -486,7 +486,7 @@ function Footer({ onLoginClick }: { onLoginClick: () => void }) {
       </div>
 
       <div className="border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between px-16 py-5">
-        <span className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.3)] text-[11px]">© 2026 SENAC Robotics. Todos os direitos reservados.</span>
+        <span className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.3)] text-[11px]">© 2026 ENGENHARIAS SENAC. Todos os direitos reservados.</span>
         <RippleBtn
           className="flex items-center gap-2 bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1.2px] uppercase px-5 py-2.5 rounded-[2px] hover:bg-[#00468a] hover:shadow-[0_4px_16px_rgba(0,53,106,0.4)] transition-all duration-200 active:scale-95 group"
           onClick={onLoginClick}
@@ -529,7 +529,7 @@ function NavBar({ onLoginClick }: { onLoginClick: () => void }) {
         <div className="flex items-center justify-between px-8 py-4">
           <div className="flex items-center gap-10">
             <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] tracking-[-1px] cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-              SENAC ROBOTICS
+              ENGENHARIAS SENAC
             </span>
             <div className="hidden lg:flex items-center gap-8">
               {links.map((l) => (
