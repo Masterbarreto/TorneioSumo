@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import SenacLogo from "./images/Seenac_logo_removido.png";
+import LgpdModal from "./LgpdModal";
 import { saveUserSession } from "./utils/cookies";
 import { API_BASE_URL } from "./config/api";
 
@@ -420,10 +421,21 @@ function LoginScreen({ role, setRole, onRegister, onSubmit, onForgotPassword }: 
 }
 
 /* ─── Register screen ────────────────────────────────────────────────── */
-function RegisterScreen({ role, setRole, onBack, onSubmit }: {
-  role: Role; setRole: (r: Role) => void;
-  onBack: () => void; onSubmit: (email: string, password: string) => void;
+function RegisterScreen({
+  role,
+  setRole,
+  onBack,
+  onSubmit,
+  initialLgpdAccepted = false,
+}: {
+  role: Role;
+  setRole: (r: Role) => void;
+  onBack: () => void;
+  onSubmit: (email: string, password: string) => void;
+  initialLgpdAccepted?: boolean;
 }) {
+  const [lgpdAccepted, setLgpdAccepted] = useState(initialLgpdAccepted);
+  const [showLgpdModal, setShowLgpdModal] = useState(false);
   const [form, setForm] = useState({ name: "", cpf: "", email: "", institution: "", password: "", confirm: "", adminCode: "" });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
@@ -451,8 +463,7 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
     return n.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3").replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const executeRegistration = async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/users/register`, {
@@ -463,11 +474,18 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
           email: form.email.trim(),
           password: form.password,
           name: form.name.trim(),
-          cargo: role === "ADMIN" ? "PROFESSOR" : "ALUNO"
+          cpf: form.cpf.trim(),
+          institution: form.institution.trim(),
+          instituicao: form.institution.trim(),
+          cargo: role === "ADMIN" ? "PROFESSOR" : "ALUNO",
+          lgpdAccepted: true,
+          lgpdAcceptedAt: new Date().toISOString(),
+          lgpdVersion: "1.0",
         })
       });
       const data = await res.json();
       setLoading(false);
+      setShowLgpdModal(false);
       if (res.status !== 201) {
         setErrors({ email: data.error || "Erro no registro." });
         return;
@@ -476,8 +494,23 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
       onSubmit(form.email, form.password);
     } catch (err) {
       setLoading(false);
+      setShowLgpdModal(false);
       setErrors({ email: "Sem conexão com o servidor de registro." });
     }
+  };
+
+  const handleRegisterClick = () => {
+    if (!validate()) return;
+    if (!lgpdAccepted) {
+      setShowLgpdModal(true);
+      return;
+    }
+    executeRegistration();
+  };
+
+  const handleAcceptTermsInModal = () => {
+    setLgpdAccepted(true);
+    executeRegistration();
   };
 
   return (
@@ -534,15 +567,54 @@ function RegisterScreen({ role, setRole, onBack, onSubmit }: {
         </div>
       </Field>
 
+      {/* LGPD Consent Card & Checkbox */}
+      <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-3 text-[12px] text-[#475569] leading-relaxed">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={lgpdAccepted}
+            onChange={(e) => setLgpdAccepted(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-[#cbd5e1] text-[#00356a] focus:ring-0 cursor-pointer"
+          />
+          <div className="flex-1">
+            <span className="font-semibold text-[#051d30]">
+              Termos de Privacidade e Proteção de Dados (LGPD){" "}
+              {lgpdAccepted && <span className="text-emerald-600 font-bold">✓ Aceito</span>}
+            </span>
+            <p className="mt-0.5 text-slate-500">
+              Concordo com o armazenamento seguro dos meus dados para identificação e participação no torneio conforme a Lei Federal nº 13.709/2018.{" "}
+              <button
+                type="button"
+                onClick={() => setShowLgpdModal(true)}
+                className="text-[#00356a] font-semibold hover:underline cursor-pointer inline-flex items-center"
+              >
+                [Ver Termos da LGPD]
+              </button>
+            </p>
+          </div>
+        </label>
+      </div>
+
       <button
-        onClick={handleSubmit}
+        onClick={handleRegisterClick}
         disabled={loading}
-        className="bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[14px] tracking-[1.6px] uppercase py-4 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#00468a] disabled:opacity-70 transition-all duration-200 active:scale-[0.99] shadow-[0_4px_16px_rgba(0,53,106,0.25)] mt-2"
+        className="bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[14px] tracking-[1.6px] uppercase py-4 rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#00468a] disabled:opacity-70 transition-all duration-200 active:scale-[0.99] shadow-[0_4px_16px_rgba(0,53,106,0.25)] mt-2 cursor-pointer"
       >
         {loading ? (
           <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> ENVIANDO...</>
         ) : (role === "ADMIN" ? "REGISTRAR NOVO ADMINISTRADOR" : "REGISTRAR NOVA EQUIPE")}
       </button>
+
+      {/* LGPD Modal popup in Register screen */}
+      <LgpdModal
+        isOpen={showLgpdModal}
+        onClose={() => setShowLgpdModal(false)}
+        onAccept={handleAcceptTermsInModal}
+        isLoading={loading}
+        title="Termos de Privacidade e Proteção de Dados"
+        confirmText="Concordar e Criar Conta"
+        cancelText="Voltar ao Formulário"
+      />
 
       <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[13px] text-center">
         Já possui uma conta?{" "}
@@ -1505,6 +1577,9 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
   const [role, setRole] = useState<Role>("ALUNO");
   const [tempEmail, setTempEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("");
+  const [showLgpdFromLogin, setShowLgpdFromLogin] = useState(false);
+  const [preAcceptedLgpd, setPreAcceptedLgpd] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -1533,7 +1608,7 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
           </div>
           <div className="flex items-center gap-6">
             <button className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[12px] hover:text-[#051d30] transition-colors">SUPORTE</button>
-            <button className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[12px] hover:text-[#051d30] transition-colors">PRIVACIDADE</button>
+            <button onClick={() => setShowPrivacyModal(true)} className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[12px] hover:text-[#00356a] transition-colors cursor-pointer">PRIVACIDADE & LGPD</button>
             <button
               onClick={onBack}
               className="flex items-center gap-1.5 font-['Inter:Semi Bold',Inter,sans-serif] font-semibold text-[#051d30] text-[12px] hover:text-[#00356a] transition-colors group"
@@ -1549,7 +1624,7 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
             {screen === "login" && (
               <LoginScreen
                 role={role} setRole={setRole}
-                onRegister={() => setScreen("register")}
+                onRegister={() => setShowLgpdFromLogin(true)}
                 onForgotPassword={() => setScreen("forgot-password")}
                 onSubmit={async (userRole: string) => {
                   setRole(userRole === "ADMIN" ? "ADMIN" : "ALUNO");
@@ -1564,6 +1639,7 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
             {screen === "register" && (
               <RegisterScreen
                 role={role} setRole={setRole}
+                initialLgpdAccepted={preAcceptedLgpd}
                 onBack={() => setScreen("login")}
                 onSubmit={(regEmail: string, regPassword: string) => {
                   setTempEmail(regEmail);
@@ -1600,6 +1676,33 @@ export default function LoginPage({ onBack, onAdminLogin, onStudentLogin }: { on
           </div>
         </div>
       </div>
+
+      {/* LGPD Modal from Login screen 'CRIAR CONTA' click */}
+      <LgpdModal
+        isOpen={showLgpdFromLogin}
+        onClose={() => setShowLgpdFromLogin(false)}
+        title="Termos de Privacidade e Proteção de Dados (LGPD)"
+        confirmText="Concordar e Prosseguir com o Cadastro"
+        cancelText="Voltar ao Login"
+        onAccept={() => {
+          setShowLgpdFromLogin(false);
+          setPreAcceptedLgpd(true);
+          setScreen("register");
+        }}
+      />
+
+      {/* LGPD Modal from Top Bar 'PRIVACIDADE & LGPD' */}
+      <LgpdModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        title="Política de Privacidade e LGPD"
+        confirmText="Entendi e Concordo"
+        cancelText="Fechar"
+        onAccept={() => {
+          setShowPrivacyModal(false);
+          setPreAcceptedLgpd(true);
+        }}
+      />
     </div>
   );
 }
