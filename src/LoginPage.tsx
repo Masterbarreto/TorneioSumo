@@ -105,7 +105,7 @@ function LeftPanel() {
         {/* Headline */}
         <div className="mt-6">
           <h1 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-white text-[42px] leading-[1.1] tracking-[-1px]">
-            Torneio de<br />Robótica
+            Torneio<br />Robótica
           </h1>
           <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[22px] mt-2">Portal de Acesso</p>
         </div>
@@ -841,7 +841,7 @@ function RegisterTeamScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
         </div>
         <h2 className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#051d30] text-[28px] mb-2">Inscrição Realizada com Sucesso!</h2>
         <p className="font-['Inter:Regular',Inter,sans-serif] text-[#8c9ab0] text-[15px] max-w-[360px] mb-8 leading-relaxed">
-          Sua equipe <strong className="text-[#051d30]">{teamName || "Sem Nome"}</strong> foi cadastrada para o Torneio de Sumô. Aguarde a validação dos documentos pelos juízes.
+          Sua equipe <strong className="text-[#051d30]">{teamName || "Sem Nome"}</strong> Foi cadastrada para o Torneio. Aguarde a validação dos documentos pelos juízes.
         </p>
         <button
           onClick={onDone}

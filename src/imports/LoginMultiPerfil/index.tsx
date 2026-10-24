@@ -132,7 +132,7 @@ function Container() {
 }
 
 function SenacLogo() {
-  return <div className="h-[382.755px] relative shrink-0 w-[652.883px]" data-name="Senac_logo 1" />;
+  return <div className="h-[382.755px] relative shrink-0 w-[652.883px]" data-name="Engenharia_Se" />;
 }
 
 function LeftVisualAnchorTheRoboticAesthetic() {

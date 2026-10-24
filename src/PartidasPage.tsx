@@ -283,7 +283,7 @@ export default function PartidasPage({
         <header className="min-h-[64px] border-b border-[#e2e8f0] bg-white flex items-center justify-between px-4 sm:px-8 pl-16 md:pl-8 py-2 shrink-0 flex-wrap gap-3">
           <div>
             <p className="text-[10px] sm:text-[11px] font-bold tracking-[2px] uppercase text-[#8c4f00]">
-              TORNEIO DE SUMÔ 3KG • CHAVE DE CONFRONTOS EM CASCATA
+              TORNEIO • CHAVE DE CONFRONTOS EM CASCATA
             </p>
             <h1 className="font-['Space_Grotesk'] font-bold text-[16px] sm:text-[18px] text-[#051d30] leading-tight">
               Gerenciamento Oficial de Partidas & Transmissão

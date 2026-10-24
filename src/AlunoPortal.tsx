@@ -357,7 +357,7 @@ export default function AlunoPortal({
               </span>
             </div>
             <p className="text-[11px] text-[#64748b] font-medium">
-              Ambiente Oficial do Aluno • SENAC Engineering Committee
+              Ambiente Oficial do Aluno •  Engineering Committee
             </p>
           </div>
         </div>
@@ -689,7 +689,7 @@ export default function AlunoPortal({
                 NORMAS DA MODALIDADE
               </span>
               <h2 className="text-[26px] font-['Space_Grotesk'] font-bold text-[#051d30]">
-                Regulamento Oficial do Robot Sumô 3kg (2026)
+                Regulamento Oficial(2026)
               </h2>
             </div>
 
@@ -718,7 +718,7 @@ export default function AlunoPortal({
               <div className="bg-[#f8fafc] p-4 rounded-[8px] border border-[#e2e8f0]">
                 <h4 className="font-bold text-[#051d30] mb-1">4. Decisão Soberana</h4>
                 <p>
-                  As decisões da equipe de arbitragem do SENAC registradas no console do árbitro são soberanas e sincronizadas diretamente no banco de dados MongoDB Atlas da competição.
+                  As decisões da equipe de arbitragem são registradas no console do árbitro são soberanas e sincronizadas diretamente no banco de dados MongoDB Atlas da competição.
                 </p>
               </div>
             </div>

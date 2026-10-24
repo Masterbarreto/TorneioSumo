@@ -59,7 +59,7 @@ export default function AlunoOnboarding({
             PRIMEIRO ACESSO • TORNEIO 2026
           </span>
           <h1 className="font-['Space_Grotesk'] font-bold text-3xl sm:text-4xl text-[#051d30] tracking-tight">
-            Bem-vindo à Arena SENAC Robotics!
+            Bem-vindo !
           </h1>
           <p className="text-slate-600 text-sm sm:text-base mt-3 leading-relaxed">
             Olá, <strong>{user?.name || "Competidor"}</strong>. Para acessar a chave de lutas,

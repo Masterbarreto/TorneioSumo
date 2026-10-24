@@ -1565,7 +1565,7 @@ function Link7() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Link">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[12px] text-[rgba(5,29,48,0.7)] tracking-[1.2px] uppercase whitespace-nowrap">
-        <p className="leading-[16px]">KNOWLEDGE HUB</p>
+        <p className="leading-[16px]">PORTAL DE CONHECIMENTO</p>
       </div>
     </div>
   );

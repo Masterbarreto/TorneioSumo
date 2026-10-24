@@ -163,7 +163,7 @@ function CountdownWidget() {
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
             <p className="font-['Liberation_Mono:Regular',monospace] text-[10px] text-[rgba(5,29,48,0.6)] tracking-[1px] uppercase leading-[15px]">CONTAGEM REGRESSIVA</p>
-            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio de Sumô 2026</p>
+            <p className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-[#00356a] text-[18px] leading-[26px]">Torneio 2026</p>
           </div>
           <svg width="18" height="21" viewBox="0 0 18 21" fill="none">
             <path d={svgPaths.pe40b59c} fill="#8C4F00" />
@@ -230,8 +230,8 @@ function HeroSection() {
 
         {/* Heading */}
         <div className="flex flex-col" style={{ animation: "fadeInUp 0.6s 0.1s ease both" }}>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 60px rgba(0,53,106,0.5)" }}>Torneio de </span>
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}>Sumô</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 60px rgba(0,53,106,0.5)" }}>Torneio</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00f2ff] text-[clamp(56px,8vw,120px)] tracking-[-4px] uppercase leading-none" style={{ textShadow: "0 0 40px rgba(0,242,255,0.3)" }}></span>
         </div>
 
         {/* Description */}
@@ -239,7 +239,7 @@ function HeroSection() {
           className="font-['Inter:Light',Inter,sans-serif] font-light text-[rgba(255,255,255,0.8)] text-[18px] leading-relaxed max-w-2xl"
           style={{ animation: "fadeInUp 0.6s 0.2s ease both" }}
         >
-          Participe do torneio de sumô e teste suas habilidades em robótica, programação e estratégia. Forme sua equipe, construa seu robô e prepare-se para a competição!
+          Participe do torneio e teste suas habilidades em robótica, programação e estratégia. Forme sua equipe, construa seu robô e prepare-se para a competição!
         </p>
 
         {/* CTAs */}
@@ -316,7 +316,7 @@ function NewsSection() {
                 key={`${active}-${i}`}
                 className="relative rounded-[2px] overflow-hidden aspect-[4/5] max-h-[480px] group cursor-pointer"
                 style={{ animation: `cardSlide${dir === "right" ? "In" : "InLeft"} 0.4s ${i * 0.08}s cubic-bezier(0.22,1,0.36,1) both` }}
-                onClick={() => setModal({ title: c.tag + ": " + c.title.replace("\n", " "), body: c.desc + " Clique no botão abaixo para saber mais sobre esta categoria de competição no torneio SENAC Robotics 2026." })}
+                onClick={() => setModal({ title: c.tag + ": " + c.title.replace("\n", " "), body: c.desc + " Clique no botão abaixo para saber mais sobre esta categoria de competição no torneio 2026." })}
               >
                 <img src={c.img} alt={c.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,53,106,0.9)] via-[rgba(0,53,106,0.2)] to-transparent transition-opacity duration-300 group-hover:opacity-90" />
@@ -411,7 +411,7 @@ function CtaSection({ onLoginClick }: { onLoginClick: () => void }) {
               <RippleBtn
                 rippleColor="rgba(0,53,106,0.15)"
                 className="border-2 border-[#00356a] text-[#00356a] font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[16px] tracking-[1.6px] uppercase py-5 rounded-[2px] mt-2 flex items-center justify-center gap-3 hover:bg-[rgba(0,53,106,0.08)] hover:shadow-[0_4px_16px_rgba(0,53,106,0.2)] transition-all duration-200 active:scale-[0.98] group"
-                onClick={() => toast("Download iniciado — regras SENAC Robotics 2026.pdf", "📥")}
+                onClick={() => toast("Download iniciado — regras.pdf", "📥")}
               >
                 DOWNLOAD DOCS
                 <svg className="transition-transform group-hover:translate-y-0.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -430,7 +430,7 @@ function CtaSection({ onLoginClick }: { onLoginClick: () => void }) {
 function Footer({ onLoginClick }: { onLoginClick: () => void }) {
   const { ref, visible } = useReveal(0.05);
   const campeonato = ["Calendário 2026", "Regras Gerais", "Premiações", "Hall da Fama"];
-  const institucional = ["Sobre o SENAC", "Comitê de Engenharia", "Transparência", "Contato"];
+  const institucional = ["Sobre o ", "Comitê de Engenharia", "Transparência", "Contato"];
   const legal = ["Privacidade", "Termos de Uso", "LGPD"];
 
   return (
@@ -440,9 +440,9 @@ function Footer({ onLoginClick }: { onLoginClick: () => void }) {
         style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(30px)" }}
       >
         <div className="flex flex-col gap-6 max-w-xs">
-          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[22px] tracking-[-1px]">ENGENHARIAS SENAC</span>
+          <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-black text-white text-[22px] tracking-[-1px]">X</span>
           <p className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.5)] text-[12px] leading-relaxed">
-            © 2026 Senac Engineering Committee.<br />Architecting the future of precision systems.
+            © 2026 Engineering Committee.<br />Architecting the future of precision systems.
           </p>
           <div className="flex gap-4">
             {[svgPaths.p313c6040, svgPaths.p1c659f80].map((d, i) => (
@@ -486,7 +486,7 @@ function Footer({ onLoginClick }: { onLoginClick: () => void }) {
       </div>
 
       <div className="border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between px-16 py-5">
-        <span className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.3)] text-[11px]">© 2026 ENGENHARIAS SENAC. Todos os direitos reservados.</span>
+        <span className="font-['Inter:Regular',Inter,sans-serif] text-[rgba(255,255,255,0.3)] text-[11px]">© 2026 . Todos os direitos reservados.</span>
         <RippleBtn
           className="flex items-center gap-2 bg-[#00356a] text-white font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[12px] tracking-[1.2px] uppercase px-5 py-2.5 rounded-[2px] hover:bg-[#00468a] hover:shadow-[0_4px_16px_rgba(0,53,106,0.4)] transition-all duration-200 active:scale-95 group"
           onClick={onLoginClick}
@@ -512,7 +512,7 @@ function NavBar({ onLoginClick }: { onLoginClick: () => void }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const links = ["TORNEIOS", "KNOWLEDGE HUB", "SOBRE"];
+  const links = ["TORNEIOS", "PORTAL DE CONHECIMENTO", "SOBRE"];
   const handleLink = (l: string) => {
     setActiveLink(l);
     toast(`Navegando para ${l}`, "🔗");
@@ -529,7 +529,7 @@ function NavBar({ onLoginClick }: { onLoginClick: () => void }) {
         <div className="flex items-center justify-between px-8 py-4">
           <div className="flex items-center gap-10">
             <span className="font-['Space_Grotesk:Bold','Space Grotesk',sans-serif] font-bold text-[#00356a] text-[20px] tracking-[-1px] cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-              ENGENHARIAS SENAC
+              ENGENHARIAS
             </span>
             <div className="hidden lg:flex items-center gap-8">
               {links.map((l) => (
