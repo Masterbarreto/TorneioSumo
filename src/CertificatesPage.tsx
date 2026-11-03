@@ -757,7 +757,7 @@ export default function CertificatesPage({
       <main className="absolute top-[64px] left-0 md:left-[256px] right-0 bottom-0 overflow-y-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-5">
 
         {/* ── Left panel: Seleção ── */}
-        <div className="flex flex-col gap-4 w-[240px] shrink-0">
+        <div className="flex flex-col gap-4 w-full lg:w-[240px] shrink-0">
           {/* Doc type */}
           <div className="bg-white rounded-[10px] border border-[rgba(194,198,210,0.4)] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
             <div className="px-4 pt-4 pb-2">
@@ -905,7 +905,7 @@ export default function CertificatesPage({
         </div>
 
         {/* ── Right panel: Status ── */}
-        <div className="flex flex-col gap-4 w-[220px] shrink-0">
+        <div className="flex flex-col gap-4 w-full lg:w-[220px] shrink-0">
           {/* Status card */}
           <div className="bg-white rounded-[10px] border border-[rgba(194,198,210,0.4)] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4">
             <div className="flex items-center gap-2">

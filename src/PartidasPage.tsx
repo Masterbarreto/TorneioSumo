@@ -373,8 +373,8 @@ export default function PartidasPage({
           </div>
 
           {/* Phase Filter Tabs Bar */}
-          <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#e2e8f0] pb-4">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               {[
                 { key: "ALL", label: "TODOS (15)" },
                 { key: "OITAVAS", label: "OITAVAS DE FINAL (8)" },
@@ -385,7 +385,7 @@ export default function PartidasPage({
                 <button
                   key={tab.key}
                   onClick={() => setActivePhase(tab.key as any)}
-                  className={`px-4 py-2 rounded-[6px] font-['Space_Grotesk'] font-bold text-[12px] tracking-wider uppercase transition-all cursor-pointer ${
+                  className={`px-2 py-1.5 sm:px-4 sm:py-2 rounded-[6px] font-['Space_Grotesk'] font-bold text-[12px] sm:text-[12px] tracking-wider uppercase transition-all cursor-pointer @px-2 py-1.5 sm:px-4 sm:py-2 rounded-[6px] font-['Space_Grotesk'] font-bold text-[9px] sm:text-[12px] tracking-wider uppercase transition-all cursor-pointer ${
                     activePhase === tab.key
                       ? "bg-[#00356a] text-white shadow-sm"
                       : "text-[#64748b] hover:text-[#051d30] hover:bg-[#f1f5f9]"
@@ -396,7 +396,7 @@ export default function PartidasPage({
               ))}
             </div>
 
-            <span className="text-[12px] font-mono text-[#64748b]">
+            <span className="text-[10px] sm:text-[12px] font-mono text-[#64748b]">
               {filteredMatches.length} CONFRONTOS ENCONTRADOS
             </span>
           </div>
