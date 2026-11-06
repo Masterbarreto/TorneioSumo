@@ -460,23 +460,12 @@ function TopNavigationBar({
     <div className="sticky top-0 z-30 backdrop-blur-[12px] bg-[rgba(255,255,255,0.85)] flex h-[64px] items-center justify-between pl-16 pr-6 md:px-8 w-full border-b border-[rgba(226,232,240,0.4)] shadow-xs" data-name="Top Navigation Bar">
       <Container15 />
       <div className="flex items-center gap-3 relative z-10 flex-wrap">
-        {/* Championship Status Button */}
-        {championshipStarted ? (
+        {/* Championship Status Badge */}
+        {championshipStarted && (
           <div className="flex items-center gap-2 rounded-full px-3 py-1.5 shadow-xs" style={{ background: "#d1fae5", border: "1px solid #6ee7b7" }}>
             <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
             <span className="text-[11px] font-bold text-green-700 uppercase tracking-[0.5px]">Campeonato Ativo</span>
           </div>
-        ) : (
-          <button
-            onClick={onToggleChampionship}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full shadow-xs font-bold text-[11px] text-black hover:opacity-90 transition-all cursor-pointer"
-            style={{ background: "#f59e0b" }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            <span>Iniciar Campeonato</span>
-          </button>
         )}
 
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#edf4ff] border border-[rgba(194,198,210,0.2)]">

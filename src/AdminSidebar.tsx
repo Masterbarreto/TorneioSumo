@@ -1,7 +1,15 @@
 import { useState, type ReactNode } from "react";
 import svgPaths from "@/imports/DashboardDoTecnico-1/svg-n9wrsd9n43";
 
-type NavKey = "home" | "arenas" | "certificados" | "times" | "partidas" | "rules" | "documents";
+export type NavKey =
+  | "home"
+  | "arenas"
+  | "certificados"
+  | "times"
+  | "partidas"
+  | "rules"
+  | "documents"
+  | "site";
 
 interface NavItem {
   key: NavKey;
@@ -14,21 +22,56 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { key: "home",        label: "Home",        iconPath: svgPaths.p1154e780, viewBox: "0 0 18.0318 18.5059", w: 18, h: 19 },
-  { key: "arenas",      label: "Arenas",      iconPath: svgPaths.p22de3980, viewBox: "0 0 20 20",            w: 20, h: 20 },
-  { key: "certificados",label: "Certificados", iconPath: svgPaths.p4c2b800,  viewBox: "0 0 18 18",            w: 18, h: 18 },
-  { key: "times",       label: "Times",       iconPath: svgPaths.p39955c80, viewBox: "0 0 22 16",            w: 22, h: 16 },
+  { key: "home", label: "Home", iconPath: svgPaths.p1154e780, viewBox: "0 0 18.0318 18.5059", w: 18, h: 19 },
+  { key: "arenas", label: "Arenas", iconPath: svgPaths.p22de3980, viewBox: "0 0 20 20", w: 20, h: 20 },
+  { key: "certificados", label: "Certificados", iconPath: svgPaths.p4c2b800, viewBox: "0 0 18 18", w: 18, h: 18 },
+  { key: "times", label: "Times", iconPath: svgPaths.p39955c80, viewBox: "0 0 22 16", w: 22, h: 16 },
   {
-    key: "partidas", label: "Partidas",
+    key: "partidas",
+    label: "Partidas",
     customIcon: (isActive) => (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 14L6 3L9 9L12 5L17 14H1Z" fill="none" stroke={isActive ? "#1e3a8a" : "#475569"} strokeWidth="1.5" strokeLinejoin="round"/>
-        <line x1="1" y1="17" x2="17" y2="17" stroke={isActive ? "#1e3a8a" : "#475569"} strokeWidth="1.5" strokeLinecap="round"/>
+        <path
+          d="M1 14L6 3L9 9L12 5L17 14H1Z"
+          fill="none"
+          stroke={isActive ? "#1e3a8a" : "#475569"}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="1"
+          y1="17"
+          x2="17"
+          y2="17"
+          stroke={isActive ? "#1e3a8a" : "#475569"}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
-  { key: "rules",       label: "Avaliar",     iconPath: svgPaths.p19ed9400, viewBox: "0 0 18 19",            w: 18, h: 19 },
-  { key: "documents",   label: "Documentos",  iconPath: svgPaths.pc679c40,  viewBox: "0 0 16 20",            w: 16, h: 20 },
+  { key: "rules", label: "Avaliar", iconPath: svgPaths.p19ed9400, viewBox: "0 0 18 19", w: 18, h: 19 },
+  { key: "documents", label: "Documentos", iconPath: svgPaths.pc679c40, viewBox: "0 0 16 20", w: 16, h: 20 },
+  {
+    key: "site",
+    label: "Página Pública",
+    customIcon: (isActive) => (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={isActive ? "#1e3a8a" : "#475569"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function AdminSidebar({
@@ -52,14 +95,14 @@ export default function AdminSidebar({
       >
         {mobileOpen ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         )}
       </button>
@@ -153,9 +196,7 @@ export default function AdminSidebar({
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            <span
-              className="pl-[12px] font-['Inter:Bold',Inter,sans-serif] font-bold text-[13px] tracking-[0.7px] uppercase"
-            >
+            <span className="pl-[12px] font-['Inter:Bold',Inter,sans-serif] font-bold text-[13px] tracking-[0.7px] uppercase">
               LOGOFF / SAIR
             </span>
           </button>
