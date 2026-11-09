@@ -122,7 +122,7 @@ export default function AdminSidebar({
         }`}
       >
         {/* Logo */}
-        <div className="absolute top-0 left-0 right-0 flex items-center h-[64px] pl-4">
+        <div className="absolute top-0 left-0 right-0 h-[64px] flex items-center pl-16 md:pl-4">
           <span className="font-['Space_Grotesk'] font-bold text-[#00356a] text-[20px] tracking-[2px] uppercase select-none">
             ROBOTIC_SYNC
           </span>
