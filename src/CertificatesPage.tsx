@@ -163,7 +163,7 @@ function BadgeCard({ member, team, showPhoto, showQR, showSeal }: {
               ROBÓTICA
             </div>
             <div style={{ color: "#f59e0b", fontWeight: 700, fontSize: 9, letterSpacing: "4px", textTransform: "uppercase", fontFamily: "sans-serif", marginTop: 1 }}>
-              SENAC
+              
             </div>
             {showSeal && (
               <div style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 20, padding: "2px 7px" }}>

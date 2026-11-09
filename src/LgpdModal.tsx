@@ -139,7 +139,7 @@ export default function LgpdModal({
             className="p-5 sm:p-6 overflow-y-auto flex-1 font-['Inter:Regular',Inter,sans-serif] text-[13px] text-[#334155] leading-relaxed space-y-4 outline-none focus:ring-1 focus:ring-[#00356a]/30"
           >
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-[12px] text-slate-700 leading-relaxed shadow-sm">
-              <strong className="text-[#051d30]">Resumo dos Seus Direitos:</strong> Os dados informados nesta plataforma são tratados exclusivamente para possibilitar sua inscrição, chaveamento nas arenas, pontuação em tempo real e emissão de certificados oficiais do Torneio de Sumô de Robôs. Suas credenciais são protegidas com criptografia de ponta e nenhuma informação é repassada comercialmente a terceiros.
+              <strong className="text-[#051d30]">Resumo dos Seus Direitos:</strong> Os dados informados nesta plataforma são tratados exclusivamente para possibilitar sua inscrição, chaveamento nas arenas, pontuação em tempo real e emissão de certificados oficiais do Torneio. Suas credenciais são protegidas com criptografia de ponta e nenhuma informação é repassada comercialmente a terceiros.
             </div>
 
             <div>
@@ -147,7 +147,7 @@ export default function LgpdModal({
                 <span className="text-[#00356a]">1.</span> Identificação do Controlador
               </h4>
               <p>
-                O <strong>Comitê das Engenharias & Diretoria de Robótica do Torneio de Sumô</strong> atua como Controlador dos dados pessoais coletados nesta plataforma, responsabilizando-se pelo tratamento ético e seguro em estrita conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018).
+                O <strong>Comitê das Engenharias & Diretoria de Robótica do Torneio</strong> atua como Controlador dos dados pessoais coletados nesta plataforma, responsabilizando-se pelo tratamento ético e seguro em estrita conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018).
               </p>
             </div>
 

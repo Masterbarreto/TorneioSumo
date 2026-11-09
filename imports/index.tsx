@@ -1187,7 +1187,7 @@ function Container56() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-black justify-center leading-[0] relative shrink-0 text-[24px] text-white tracking-[-1.2px] whitespace-nowrap">
-        <p className="leading-[32px]">SENAC ROBOTICS</p>
+        <p className="leading-[32px]">ROBOTICA</p>
       </div>
     </div>
   );
@@ -1197,7 +1197,7 @@ function Container57() {
   return (
     <div className="content-stretch flex flex-col items-start max-w-[320px] relative shrink-0 w-full" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-[rgba(255,255,255,0.5)] whitespace-nowrap">
-        <p className="leading-[19.5px] mb-0">© 2024 Senac Engineering Committee.</p>
+        <p className="leading-[19.5px] mb-0">© 20XX Engineering Committee.</p>
         <p className="leading-[19.5px]">Architecting the future of precision systems.</p>
       </div>
     </div>
@@ -1349,7 +1349,7 @@ function Item4() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-name="Item">
       <div className="[word-break:break-word] flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-[rgba(255,255,255,0.6)] w-full">
-        <p className="leading-[16px]">Sobre o SENAC</p>
+        <p className="leading-[16px]">Sobre o </p>
       </div>
     </div>
   );
@@ -1535,7 +1535,7 @@ function Container67() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Container">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[#00356a] text-[20px] tracking-[-1px] whitespace-nowrap">
-        <p className="leading-[28px]">SENAC ROBOTICS</p>
+        <p className="leading-[28px]">ROBOTICA</p>
       </div>
     </div>
   );
@@ -1565,7 +1565,7 @@ function Link7() {
   return (
     <div className="content-stretch flex flex-col items-start relative shrink-0" data-name="Link">
       <div className="[word-break:break-word] flex flex-col font-['Space_Grotesk:Bold',sans-serif] font-bold justify-center leading-[0] relative shrink-0 text-[12px] text-[rgba(5,29,48,0.7)] tracking-[1.2px] uppercase whitespace-nowrap">
-        <p className="leading-[16px]">KNOWLEDGE HUB</p>
+        <p className="leading-[16px]">PORTAL DE CONHECIMENTO</p>
       </div>
     </div>
   );
